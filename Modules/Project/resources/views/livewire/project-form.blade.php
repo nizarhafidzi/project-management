@@ -107,6 +107,109 @@
                         </div>
                     @endif
 
+                    {{-- Start & End Date --}}
+                    <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-6">
+                        <div>
+                            <x-input-label for="start_date" :value="__('Start Date')" />
+                            <x-text-input wire:model.blur="start_date" id="start_date" type="date"
+                                          class="tw-mt-1 tw-block tw-w-full" />
+                            <x-input-error :messages="$errors->get('start_date')" class="tw-mt-2" />
+                        </div>
+                        <div>
+                            <x-input-label for="end_date" :value="__('End Date')" />
+                            <x-text-input wire:model.blur="end_date" id="end_date" type="date"
+                                          class="tw-mt-1 tw-block tw-w-full" />
+                            <x-input-error :messages="$errors->get('end_date')" class="tw-mt-2" />
+                        </div>
+                    </div>
+
+                    {{-- ACC Integration Toggle --}}
+                    <div class="tw-pt-6 tw-border-t tw-border-gray-200">
+                        <div class="tw-flex tw-items-center tw-justify-between">
+                            <div>
+                                <h3 class="tw-text-lg tw-font-medium tw-leading-6 tw-text-gray-900">Autodesk Construction Cloud Integration</h3>
+                                <p class="tw-mt-1 tw-text-sm tw-text-gray-500">Connect this project to an ACC project for document management.</p>
+                            </div>
+                            <div class="tw-flex tw-items-center">
+                                <label for="integrateWithAcc" class="tw-flex tw-items-center tw-cursor-pointer">
+                                    <div class="tw-relative">
+                                        <input type="checkbox" id="integrateWithAcc" wire:model.live="integrateWithAcc" class="tw-sr-only">
+                                        <div class="tw-w-10 tw-h-4 tw-bg-gray-400 tw-rounded-full tw-shadow-inner toggler-bg"></div>
+                                        <div class="tw-dot tw-absolute tw-w-6 tw-h-6 tw-bg-white tw-rounded-full tw-shadow tw-left-0 tw-top-[-4px] tw-transition"></div>
+                                    </div>
+                                    <div class="tw-ml-3 tw-text-gray-700 tw-font-medium">
+                                        {{ $integrateWithAcc ? 'Enabled' : 'Disabled' }}
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {{-- Integration UI --}}
+                        @if ($integrateWithAcc)
+                            <div class="tw-mt-6 tw-p-4 tw-bg-blue-50 tw-rounded-md tw-border tw-border-blue-100">
+                                {{-- Mode Selection --}}
+                                <div class="tw-mb-4">
+                                    <label class="tw-block tw-text-sm tw-font-medium tw-text-gray-700 tw-mb-2">Integration Mode</label>
+                                    <div class="tw-flex tw-space-x-4">
+                                        <label class="tw-inline-flex tw-items-center">
+                                            <input type="radio" wire:model.live="accCreationMode" value="existing" class="tw-form-radio tw-text-indigo-600">
+                                            <span class="tw-ml-2 tw-text-gray-700">Link Existing Project</span>
+                                        </label>
+                                        <label class="tw-inline-flex tw-items-center">
+                                            <input type="radio" wire:model.live="accCreationMode" value="new" class="tw-form-radio tw-text-indigo-600">
+                                            <span class="tw-ml-2 tw-text-gray-700">Create New Project in ACC</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {{-- Hub Selection --}}
+                                <div class="tw-mb-4">
+                                    <x-input-label for="selectedHub" :value="__('Select Hub / Account')" />
+                                    <select wire:model.live="selectedHub" id="selectedHub"
+                                            class="tw-mt-1 tw-block tw-w-full tw-border-gray-300 tw-rounded-md tw-shadow-sm focus:tw-border-indigo-500 focus:tw-ring-indigo-500 tw-text-sm">
+                                        <option value="">-- Select Hub --</option>
+                                        @foreach($hubs as $hub)
+                                            <option value="{{ $hub['id'] }}">{{ $hub['attributes']['name'] }}</option>
+                                        @endforeach
+                                    </select>
+                                    <x-input-error :messages="$errors->get('selectedHub')" class="tw-mt-2" />
+                                </div>
+
+                                {{-- Existing Project Selection --}}
+                                @if ($accCreationMode === 'existing')
+                                    <div class="tw-mb-4">
+                                        <x-input-label for="selectedAccProject" :value="__('Select ACC Project')" />
+                                        <select wire:model.live="selectedAccProject" id="selectedAccProject"
+                                                class="tw-mt-1 tw-block tw-w-full tw-border-gray-300 tw-rounded-md tw-shadow-sm focus:tw-border-indigo-500 focus:tw-ring-indigo-500 tw-text-sm"
+                                                {{ empty($selectedHub) ? 'disabled' : '' }}>
+                                            <option value="">-- Select Project --</option>
+                                            @foreach($accProjects as $proj)
+                                                <option value="{{ $proj['id'] }}">{{ $proj['attributes']['name'] }}</option>
+                                            @endforeach
+                                        </select>
+                                        <x-input-error :messages="$errors->get('selectedAccProject')" class="tw-mt-2" />
+                                    </div>
+                                @else
+                                    <div class="tw-mb-4 tw-text-sm tw-text-blue-700">
+                                        <p>A new project will be created in Autodesk Construction Cloud using the <strong>Project Name</strong>, <strong>Start Date</strong>, and <strong>End Date</strong> entered above.</p>
+                                        <p class="tw-mt-1">Assuming <strong>Construction Management</strong> template and <strong>Docs</strong> service activation.</p>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                    
+                    <style>
+                        /* Toggle Switch CSS */
+                        input:checked ~ .tw-dot {
+                            transform: translateX(100%);
+                            background-color: #4f46e5; /* indigo-600 */
+                        }
+                        input:checked ~ .toggler-bg {
+                            background-color: #e0e7ff; /* indigo-100 */
+                        }
+                    </style>
+
                     {{-- Submit --}}
                     <div class="tw-flex tw-items-center tw-justify-end tw-gap-4 tw-pt-4 tw-border-t tw-border-gray-200">
                         <a href="{{ route('project.index') }}" wire:navigate

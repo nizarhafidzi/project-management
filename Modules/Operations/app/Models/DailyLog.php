@@ -25,6 +25,7 @@ class DailyLog extends Model
         'approval_status',
         'rejection_reason',
         'status',
+        'notes',
     ];
 
     protected function casts(): array

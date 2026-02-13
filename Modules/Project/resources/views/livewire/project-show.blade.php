@@ -77,6 +77,16 @@
                                 </span>
                             </dd>
                         </div>
+                        @if($project->acc_project_id)
+                        <div>
+                            <dt class="tw-text-sm tw-font-medium tw-text-gray-500">Autodesk Project ID</dt>
+                            <dd class="tw-mt-1">
+                                <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-xs tw-font-mono tw-bg-gray-100 tw-text-gray-600">
+                                    {{ $project->acc_project_id }}
+                                </span>
+                            </dd>
+                        </div>
+                        @endif
                         <div>
                             <dt class="tw-text-sm tw-font-medium tw-text-gray-500">Status</dt>
                             <dd class="tw-mt-1">
@@ -120,6 +130,8 @@
                     </dl>
                 </div>
             </div>
+
+
 
             {{-- Team Members Card --}}
             <div class="tw-bg-white tw-overflow-hidden tw-shadow-sm sm:tw-rounded-lg">

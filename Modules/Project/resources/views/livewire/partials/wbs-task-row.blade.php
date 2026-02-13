@@ -8,7 +8,7 @@
 <div class="tw-group" wire:key="task-{{ $task->id }}">
     <div class="tw-grid tw-grid-cols-12 tw-gap-2 tw-px-3 tw-py-2.5 tw-items-center hover:tw-bg-gray-50 tw-transition-colors">
         {{-- Task Name with indent & expand toggle --}}
-        <div class="tw-col-span-4 tw-flex tw-items-center tw-min-w-0" style="padding-left: {{ $indent }}rem">
+        <div class="tw-col-span-3 tw-flex tw-items-center tw-min-w-0" style="padding-left: {{ $indent }}rem">
             @if ($hasChildren)
                 <button wire:click="toggleNode({{ $task->id }})"
                         class="tw-flex-shrink-0 tw-w-5 tw-h-5 tw-mr-1.5 tw-text-gray-400 hover:tw-text-gray-600 tw-transition-colors tw-rounded focus:tw-outline-none">
@@ -28,19 +28,54 @@
                     <span class="tw-inline-flex tw-items-center tw-px-1.5 tw-py-0.5 tw-rounded tw-text-xs tw-font-mono tw-font-medium tw-bg-indigo-50 tw-text-indigo-700">
                         {{ $task->wbs_code }}
                     </span>
-                    <span class="tw-text-sm tw-text-gray-900 tw-truncate tw-font-medium">{{ $task->name }}</span>
+                    <span class="tw-text-sm tw-text-gray-900 tw-truncate tw-font-medium" title="{{ $task->name }}">{{ $task->name }}</span>
                 </div>
-                @if ($task->acc_file_name)
-                    <p class="tw-text-xs tw-text-gray-400 tw-truncate tw-mt-0.5">📎 {{ $task->acc_file_name }}</p>
-                @endif
             </div>
         </div>
 
+        {{-- Linked File --}}
+        <div class="tw-col-span-2 tw-min-w-0">
+            @if ($task->acc_file_name)
+                <div class="tw-flex tw-items-center tw-gap-2">
+                    @if($task->acc_file_urn)
+                        <a href="{{ route('project.task.workspace', ['project' => $task->project_id, 'task' => $task->id]) }}" 
+                           target="_blank" 
+                           class="tw-text-xs tw-text-blue-600 hover:tw-underline tw-truncate hover:tw-text-blue-800 tw-transition-colors" 
+                           title="Click to open 3D Workspace">
+                            📎 {{ \Illuminate\Support\Str::limit($task->acc_file_name, 25) }}
+                        </a>
+                    @else
+                        <p class="tw-text-xs tw-text-gray-500 tw-truncate" title="{{ $task->acc_file_name }}">
+                            📎 {{ \Illuminate\Support\Str::limit($task->acc_file_name, 25) }}
+                        </p>
+                    @endif
+                    <span class="tw-inline-flex tw-items-center tw-px-1.5 tw-py-0.5 tw-rounded tw-text-xs tw-font-bold tw-bg-blue-100 tw-text-blue-800">
+                        V{{ $task->acc_file_version ?? '?' }}
+                    </span>
+                    @if($task->acc_latest_version > $task->acc_file_version)
+                         <span class="tw-inline-flex tw-items-center tw-px-1.5 tw-py-0.5 tw-rounded tw-text-xs tw-font-bold tw-bg-red-100 tw-text-red-800" title="Update Available (V{{ $task->acc_latest_version }})">
+                            Use V{{ $task->acc_latest_version }}
+                        </span>
+                        @if($canManage)
+                            <button wire:click="refreshVersion({{ $task->id }})" 
+                                class="tw-text-blue-600 hover:tw-text-blue-800" title="Update to latest version">
+                                <svg class="tw-w-4 tw-h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
+                        @endif
+                    @endif
+                </div>
+            @else
+                <span class="tw-text-xs tw-text-gray-400">-</span>
+            @endif
+        </div>
+
         {{-- Assigned To --}}
-        <div class="tw-col-span-2 tw-text-center">
+        <div class="tw-col-span-1 tw-text-center">
             @if($task->user)
-                <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-xs tw-font-medium tw-bg-gray-100 tw-text-gray-800">
-                    {{ $task->user->name }}
+                <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-xs tw-font-medium tw-bg-gray-100 tw-text-gray-800 tw-truncate tw-max-w-full" title="{{ $task->user->name }}">
+                    {{ \Illuminate\Support\Str::limit($task->user->name, 10) }}
                 </span>
             @else
                 <span class="tw-text-xs tw-text-gray-400">-</span>

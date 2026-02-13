@@ -13,6 +13,7 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @stack('styles')
     </head>
     <body class="tw-font-sans tw-antialiased">
         <div class="tw-min-h-screen tw-bg-gray-100">
@@ -52,5 +53,6 @@
                 </button>
             </div>
         </div>
+        @stack('scripts')
     </body>
 </html>

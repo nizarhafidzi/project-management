@@ -4,13 +4,15 @@
             <h2 class="tw-font-semibold tw-text-xl tw-text-gray-800 tw-leading-tight">
                 {{ __('Projects') }}
             </h2>
-            <a href="{{ route('project.create') }}" wire:navigate
-               class="tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-bg-indigo-600 tw-border tw-border-transparent tw-rounded-md tw-font-semibold tw-text-xs tw-text-white tw-uppercase tw-tracking-widest hover:tw-bg-indigo-700 focus:tw-bg-indigo-700 active:tw-bg-indigo-900 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-indigo-500 focus:tw-ring-offset-2 tw-transition tw-ease-in-out tw-duration-150">
-                <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                {{ __('New Project') }}
-            </a>
+            <div class="tw-flex tw-space-x-2">
+                <a href="{{ route('project.create') }}" wire:navigate
+                   class="tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-bg-indigo-600 tw-border tw-border-transparent tw-rounded-md tw-font-semibold tw-text-xs tw-text-white tw-uppercase tw-tracking-widest hover:tw-bg-indigo-700 focus:tw-bg-indigo-700 active:tw-bg-indigo-900 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-indigo-500 focus:tw-ring-offset-2 tw-transition tw-ease-in-out tw-duration-150">
+                    <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    {{ __('New Project') }}
+                </a>
+            </div>
         </div>
     </x-slot>
 

@@ -38,6 +38,22 @@ class WbsManager extends Component
     // Access control
     public bool $canManage = false;
 
+    // ACC Integration
+    public bool $showFilePicker = false;
+    public string $formAccFileUrn = '';
+    public ?int $formAccFileVersion = null;
+
+    // Bulk Check State
+    public array $accUpdateQueue = [];
+    public bool $isCheckingUpdates = false;
+    public int $checkedCount = 0;
+    public int $totalEffectiveCount = 0;
+
+    protected $listeners = [
+        'file-selected' => 'handleFileSelected',
+        'check-next-version' => 'processNextVersionCheck'
+    ];
+
     protected function rules(): array
     {
         return [
@@ -46,6 +62,8 @@ class WbsManager extends Component
             'formStartDate' => 'required|date',
             'formEndDate' => 'required|date|after_or_equal:formStartDate',
             'formAccFileName' => 'nullable|string|max:255',
+            'formAccFileUrn' => 'nullable|string',
+            'formAccFileVersion' => 'nullable|integer',
             'formAssignedTo' => 'nullable|exists:users,id',
         ];
     }
@@ -113,6 +131,54 @@ class WbsManager extends Component
     }
 
     // ──────────────────────────────────────────────
+    // ACC File Picker & Integration
+    // ──────────────────────────────────────────────
+
+    public function openFilePicker()
+    {
+        abort_if(!$this->canManage, 403);
+        
+        if (!$this->project->acc_project_id) {
+            $this->dispatch('notify', type: 'error', content: 'This project is not linked to ACC.');
+            return;
+        }
+
+        $this->showFilePicker = true;
+        // Props handling initialization now
+        // $this->dispatch('trigger-file-picker', ...);
+    }
+
+    public function closeFilePicker()
+    {
+        $this->showFilePicker = false;
+    }
+
+    public function handleFileSelected($urn, $name)
+    {
+        $this->formAccFileName = $name;
+        $this->formAccFileUrn = $urn;
+        
+        // Auto-overwrite Name
+        // Remove extension (e.g. .rvt, .dwg)
+        $cleanName = preg_replace('/\.[^.]+$/', '', $name);
+        $this->formName = $cleanName;
+
+        // Try to fetch initial version info immediately? 
+        // Or leave it null and let "Check Updates" fill it?
+        // Let's try to fetch it to have a baseline.
+        $service = app(\App\Services\AutodeskService::class);
+        $versionInfo = $service->checkFileVersion(Auth::user(), $this->project->acc_project_id, $urn);
+        
+        if ($versionInfo) {
+            $this->formAccFileVersion = $versionInfo['version'];
+        } else {
+            $this->formAccFileVersion = 1; // Default fallback
+        }
+
+        $this->closeFilePicker();
+    }
+
+    // ──────────────────────────────────────────────
     // Create / Edit Modal
     // ──────────────────────────────────────────────
 
@@ -152,6 +218,8 @@ class WbsManager extends Component
         $this->formStartDate = $task->start_date->format('Y-m-d');
         $this->formEndDate = $task->end_date->format('Y-m-d');
         $this->formAccFileName = $task->acc_file_name ?? '';
+        $this->formAccFileUrn = $task->acc_file_urn ?? '';
+        $this->formAccFileVersion = $task->acc_file_version;
         $this->formAssignedTo = $task->user_id;
 
         if ($task->parent_id) {
@@ -178,6 +246,8 @@ class WbsManager extends Component
         $this->formEndDate = '';
         $this->formEndDate = '';
         $this->formAccFileName = '';
+        $this->formAccFileUrn = '';
+        $this->formAccFileVersion = null;
         $this->formWbsCode = '';
         $this->formAssignedTo = '';
         $this->formParentId = null;
@@ -195,42 +265,61 @@ class WbsManager extends Component
         abort_if(!$this->canManage, 403);
         $this->validate();
 
-        if ($this->isEditing) {
-            $task = Task::findOrFail($this->editingTaskId);
-            $task->update([
+        \Illuminate\Support\Facades\Log::info('Submitting WBS Task', [
+            'form' => [
                 'name' => $this->formName,
-                'weight' => (float) $this->formWeight,
-                'start_date' => $this->formStartDate,
-                'end_date' => $this->formEndDate,
-                'acc_file_name' => $this->formAccFileName ?: null,
-                'user_id' => $this->formAssignedTo ?: null,
-            ]);
+                'urn' => $this->formAccFileUrn,
+                'version' => $this->formAccFileVersion
+            ]
+        ]);
 
-            session()->flash('message', 'Task updated successfully.');
-        } else {
-            $sortOrder = Task::where('project_id', $this->project->id)
-                ->where('parent_id', $this->formParentId)
-                ->max('sort_order') ?? 0;
+        try {
+            if ($this->isEditing) {
+                $task = Task::findOrFail($this->editingTaskId);
+                $task->update([
+                    'name' => $this->formName,
+                    'weight' => (float) $this->formWeight,
+                    'start_date' => $this->formStartDate,
+                    'end_date' => $this->formEndDate,
+                    'acc_file_name' => $this->formAccFileName ?: null,
+                    'acc_file_urn' => $this->formAccFileUrn ?: null,
+                    'acc_file_version' => $this->formAccFileVersion,
+                    'user_id' => $this->formAssignedTo ?: null,
+                ]);
 
-            Task::create([
-                'project_id' => $this->project->id,
-                'parent_id' => $this->formParentId,
-                'wbs_code' => $this->formWbsCode,
-                'name' => $this->formName,
-                'weight' => (float) $this->formWeight,
-                'start_date' => $this->formStartDate,
-                'end_date' => $this->formEndDate,
-                'acc_file_name' => $this->formAccFileName ?: null,
-                'user_id' => $this->formAssignedTo ?: null,
-                'sort_order' => $sortOrder + 1,
-            ]);
+                session()->flash('message', 'Task updated successfully.');
+            } else {
+                $sortOrder = Task::where('project_id', $this->project->id)
+                    ->where('parent_id', $this->formParentId)
+                    ->max('sort_order') ?? 0;
 
-            // Auto-expand parent to show new child
-            if ($this->formParentId && !in_array($this->formParentId, $this->expandedNodes)) {
-                $this->expandedNodes[] = $this->formParentId;
+                Task::create([
+                    'project_id' => $this->project->id,
+                    'parent_id' => $this->formParentId,
+                    'wbs_code' => $this->formWbsCode,
+                    'name' => $this->formName,
+                    'weight' => (float) $this->formWeight,
+                    'start_date' => $this->formStartDate,
+                    'end_date' => $this->formEndDate,
+                    'acc_file_name' => $this->formAccFileName ?: null,
+                    'acc_file_urn' => $this->formAccFileUrn ?: null,
+                    'acc_file_version' => $this->formAccFileVersion,
+                    'user_id' => $this->formAssignedTo ?: null,
+                    'sort_order' => $sortOrder + 1,
+                ]);
+
+                // Auto-expand parent to show new child
+                if ($this->formParentId && !in_array($this->formParentId, $this->expandedNodes)) {
+                    $this->expandedNodes[] = $this->formParentId;
+                }
+
+                session()->flash('message', 'Task created successfully.');
             }
-
-            session()->flash('message', 'Task created successfully.');
+            \Illuminate\Support\Facades\Log::info('WBS Save Success');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('WBS Save Failed: ' . $e->getMessage());
+            $this->dispatch('notify', type: 'error', content: 'Save Failed: ' . $e->getMessage());
+            throw $e; // Re-throw to see if Livewire catches it
         }
 
         $this->closeModal();
@@ -259,6 +348,75 @@ class WbsManager extends Component
 
         session()->flash('message', $message);
         $this->project->refresh();
+    }
+
+    // ──────────────────────────────────────────────
+    // Version Sync Logic
+    // ──────────────────────────────────────────────
+
+    public function checkForUpdates()
+    {
+        abort_if(!$this->canManage, 403);
+        
+        $tasksToUpdate = $this->project->tasks()
+            ->whereNotNull('acc_file_urn')
+            ->pluck('id')
+            ->toArray();
+            
+        if (empty($tasksToUpdate)) {
+            $this->dispatch('notify', type: 'info', content: 'No tasks linked to ACC files.');
+            return;
+        }
+
+        $this->accUpdateQueue = $tasksToUpdate;
+        $this->isCheckingUpdates = true;
+        $this->checkedCount = 0;
+        
+        // Start the loop
+        $this->dispatch('check-next-version');
+    }
+
+    public function processNextVersionCheck()
+    {
+        if (empty($this->accUpdateQueue)) {
+            $this->isCheckingUpdates = false;
+            $this->dispatch('notify', type: 'success', content: 'BIM Updates check complete.');
+            $this->project->refresh();
+            return;
+        }
+
+        $taskId = array_shift($this->accUpdateQueue);
+        $task = Task::find($taskId);
+
+        if ($task && $task->acc_file_urn) {
+            $service = app(\App\Services\AutodeskService::class);
+            $info = $service->checkFileVersion(Auth::user(), $this->project->acc_project_id, $task->acc_file_urn);
+            
+            if ($info && isset($info['version'])) {
+                $task->update([
+                    'acc_latest_version' => $info['version'],
+                    'acc_last_synced_at' => now(),
+                ]);
+            }
+        }
+
+        $this->checkedCount++;
+        
+        // Continue loop
+        $this->dispatch('check-next-version');
+    }
+
+    public function refreshVersion($taskId)
+    {
+        abort_if(!$this->canManage, 403);
+        $task = Task::findOrFail($taskId);
+        
+        if ($task->acc_latest_version) {
+            $task->update([
+                'acc_file_version' => $task->acc_latest_version
+            ]);
+            $this->dispatch('notify', type: 'success', content: 'Task updated to latest version.');
+        }
     }
 
     // ──────────────────────────────────────────────

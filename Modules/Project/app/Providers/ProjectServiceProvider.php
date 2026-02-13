@@ -32,6 +32,7 @@ class ProjectServiceProvider extends ServiceProvider
         \Livewire\Livewire::component('project::project-form', \Modules\Project\Livewire\ProjectForm::class);
         \Livewire\Livewire::component('project::project-show', \Modules\Project\Livewire\ProjectShow::class);
         \Livewire\Livewire::component('project::wbs-manager', \Modules\Project\Livewire\WbsManager::class);
+        \Livewire\Livewire::component('project::acc-file-picker', \Modules\Project\Livewire\AccFilePicker::class);
 
         \Modules\Project\Models\Task::observe(\Modules\Project\Observers\TaskObserver::class);
     }

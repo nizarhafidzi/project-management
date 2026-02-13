@@ -22,7 +22,17 @@ class Project extends Model
         'technical_service',
         'sector',
         'acc_project_id',
+        'acc_account_id',
+        'acc_sync_status',
+        'start_date',
+        'end_date',
+        'contract_value',
+        'owner',
+        'consultant',
+        'description',
+        'address',
         'status',
+        'contract_date',
     ];
 
     protected function casts(): array
@@ -121,7 +131,9 @@ class Project extends Model
      */
     public function calculateTotalProgress(): float
     {
-        $rootTasks = $this->rootTasks()->with('children')->get();
+        $rootTasks = $this->relationLoaded('rootTasks') 
+            ? $this->rootTasks 
+            : $this->rootTasks()->with('children')->get();
 
         if ($rootTasks->isEmpty()) {
             return 0;

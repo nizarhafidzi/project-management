@@ -61,10 +61,23 @@
                         Collapse
                     </button>
                     @if ($canManage)
+                        <button wire:click="checkForUpdates" wire:loading.attr="disabled"
+                                class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-md tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors">
+                            <svg wire:loading.remove wire:target="checkForUpdates" class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <svg wire:loading wire:target="checkForUpdates" class="tw-animate-spin tw-w-4 tw-h-4 tw-mr-2" fill="none" viewBox="0 0 24 24">
+                                <circle class="tw-opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="tw-opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span wire:loading.remove wire:target="checkForUpdates">Check BIM Updates</span>
+                            <span wire:loading wire:target="checkForUpdates">Checking...</span>
+                        </button>
+
                         <button wire:click="recalculateSCurve" wire:loading.attr="disabled"
                                 class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-md tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors">
                             <svg wire:loading.remove wire:target="recalculateSCurve" class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                             <svg wire:loading wire:target="recalculateSCurve" class="tw-animate-spin tw-w-4 tw-h-4 tw-mr-2" fill="none" viewBox="0 0 24 24">
                                 <circle class="tw-opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -144,8 +157,9 @@
                     @if ($rootTasks->count() > 0)
                         {{-- Table Header --}}
                         <div class="tw-grid tw-grid-cols-12 tw-gap-2 tw-px-3 tw-py-2 tw-bg-gray-50 tw-rounded-t-md tw-border tw-border-gray-200 tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">
-                            <div class="tw-col-span-4">Task</div>
-                            <div class="tw-col-span-2 tw-text-center">Assigned To</div>
+                            <div class="tw-col-span-3">Task</div>
+                            <div class="tw-col-span-2">Linked File</div>
+                            <div class="tw-col-span-1 tw-text-center">Assigned To</div>
                             <div class="tw-col-span-1 tw-text-center">Weight</div>
                             <div class="tw-col-span-1 tw-text-center">Start Date</div>
                             <div class="tw-col-span-1 tw-text-center">End Date</div>
@@ -199,6 +213,30 @@
                             Parent: <span class="tw-font-medium">{{ $parentLabel }}</span>
                             · WBS Code: <span class="tw-font-mono tw-font-medium tw-text-indigo-600">{{ $formWbsCode }}</span>
                         </p>
+
+                        @if ($errors->any())
+                            <div class="tw-mb-4 tw-rounded-md tw-bg-red-50 tw-p-4">
+                                <div class="tw-flex">
+                                    <div class="tw-flex-shrink-0">
+                                        <svg class="tw-h-5 tw-w-5 tw-text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </div>
+                                    <div class="tw-ml-3">
+                                        <h3 class="tw-text-sm tw-font-medium tw-text-red-800">
+                                            There were errors with your submission
+                                        </h3>
+                                        <div class="tw-mt-2 tw-text-sm tw-text-red-700">
+                                            <ul role="list" class="tw-list-disc tw-pl-5 tw-space-y-1">
+                                                @foreach ($errors->all() as $error)
+                                                    <li>{{ $error }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
 
                         <div class="tw-space-y-4">
                             {{-- Task Name --}}
@@ -255,25 +293,67 @@
                             </div>
                             @endif
 
-                            {{-- ACC File Name (placeholder) --}}
-                            <div>
-                                <x-input-label for="formAccFileName" :value="__('ACC File Name (optional)')" />
-                                <x-text-input wire:model="formAccFileName" id="formAccFileName" type="text"
-                                              class="tw-mt-1 tw-block tw-w-full" placeholder="Manual input — ACC sync coming soon" />
-                                <p class="tw-mt-1 tw-text-xs tw-text-gray-400">This will auto-sync with ACC in a future release.</p>
+                            {{-- ACC File Link (Inline) --}}
+                            <div x-data="{ openPicker: @entangle('showFilePicker') }">
+                                <x-input-label for="formAccFileName" :value="__('Linked ACC File')" />
+                                <div class="tw-mt-1 tw-flex tw-rounded-md tw-shadow-sm">
+                                    <div class="tw-relative tw-flex-grow tw-focus-within:tw-z-10">
+                                        <x-text-input wire:model="formAccFileName" id="formAccFileName" type="text" readonly
+                                                      class="tw-block tw-w-full tw-rounded-none tw-rounded-l-md tw-bg-gray-50 tw-text-gray-500" 
+                                                      placeholder="No file selected" />
+                                    </div>
+                                    <button type="button" @click="openPicker = !openPicker"
+                                            class="tw-relative tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-border tw-border-gray-300 tw-text-sm tw-font-medium tw-rounded-r-md tw-text-gray-700 tw-bg-gray-50 hover:tw-bg-gray-100 focus:tw-outline-none focus:tw-ring-1 focus:tw-ring-indigo-500 focus:tw-border-indigo-500">
+                                        <svg class="-tw-ml-1 tw-mr-2 tw-h-5 tw-w-5 tw-text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                        </svg>
+                                        <span x-text="openPicker ? 'Close Picker' : 'Select File'"></span>
+                                    </button>
+                                </div>
+                                @if($formAccFileUrn)
+                                    <p class="tw-mt-1 tw-text-xs tw-text-green-600">
+                                        Linked. Version: {{ $formAccFileVersion ?? 'Unknown' }}
+                                    </p>
+                                @endif
+                                <x-input-error :messages="$errors->get('formAccFileName')" class="tw-mt-1" />
+
+                                {{-- Inline Picker Container --}}
+                                <div x-show="openPicker" x-cloak 
+                                     class="tw-mt-2 tw-border tw-border-gray-200 tw-rounded-md tw-bg-gray-50 tw-p-2"
+                                     x-transition:enter="tw-transition tw-ease-out tw-duration-100"
+                                     x-transition:enter-start="tw-opacity-0 tw-transform tw-scale-95"
+                                     x-transition:enter-end="tw-opacity-100 tw-transform tw-scale-100"
+                                     x-transition:leave="tw-transition tw-ease-in tw-duration-75"
+                                     x-transition:leave-start="tw-opacity-100 tw-transform tw-scale-100"
+                                     x-transition:leave-end="tw-opacity-0 tw-transform tw-scale-95">
+                                     
+                                    @if($project->acc_project_id)
+                                        <livewire:project::acc-file-picker 
+                                            :projectId="$project->acc_project_id" 
+                                            :hubId="$project->acc_account_id" 
+                                            wire:key="acc-picker-{{ $project->id }}"
+                                        />
+                                    @else
+                                        <div class="tw-p-4 tw-text-center tw-text-sm tw-text-red-500">
+                                            Project is not linked to ACC.
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
+                            <div class="tw-px-4 tw-py-3 sm:tw-px-6 sm:tw-flex sm:tw-flex-row-reverse">
+                            <button wire:click="saveTask" type="button"
+                                    class="tw-w-full tw-inline-flex tw-justify-center tw-rounded-md tw-border tw-border-transparent tw-shadow-sm tw-px-4 tw-py-2 tw-bg-indigo-600 tw-text-base tw-font-medium tw-text-white hover:tw-bg-indigo-700 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-offset-2 focus:tw-ring-indigo-500 sm:tw-ml-3 sm:tw-w-auto sm:tw-text-sm">
+                                {{ $isEditing ? 'Update' : 'Create' }}
+                            </button>
+                            <button wire:click="closeModal" type="button"
+                                    class="tw-mt-3 tw-w-full tw-inline-flex tw-justify-center tw-rounded-md tw-border tw-border-gray-300 tw-shadow-sm tw-px-4 tw-py-2 tw-bg-white tw-text-base tw-font-medium tw-text-gray-700 hover:tw-bg-gray-50 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-offset-2 focus:tw-ring-indigo-500 sm:tw-mt-0 sm:tw-ml-3 sm:tw-w-auto sm:tw-text-sm">
+                                Cancel
+                            </button>
+                        </div>
                     </div>
-                    <div class="tw-bg-gray-50 tw-px-4 tw-py-3 sm:tw-px-6 sm:tw-flex sm:tw-flex-row-reverse">
-                        <button wire:click="saveTask" type="button"
-                                class="tw-w-full tw-inline-flex tw-justify-center tw-rounded-md tw-border tw-border-transparent tw-shadow-sm tw-px-4 tw-py-2 tw-bg-indigo-600 tw-text-base tw-font-medium tw-text-white hover:tw-bg-indigo-700 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-offset-2 focus:tw-ring-indigo-500 sm:tw-ml-3 sm:tw-w-auto sm:tw-text-sm">
-                            {{ $isEditing ? 'Update' : 'Create' }}
-                        </button>
-                        <button wire:click="closeModal" type="button"
-                                class="tw-mt-3 tw-w-full tw-inline-flex tw-justify-center tw-rounded-md tw-border tw-border-gray-300 tw-shadow-sm tw-px-4 tw-py-2 tw-bg-white tw-text-base tw-font-medium tw-text-gray-700 hover:tw-bg-gray-50 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-offset-2 focus:tw-ring-indigo-500 sm:tw-mt-0 sm:tw-ml-3 sm:tw-w-auto sm:tw-text-sm">
-                            Cancel
-                        </button>
-                    </div>
+                    {{-- Footer Buttons --}}
+                    
                 </div>
             </div>
         </div>
