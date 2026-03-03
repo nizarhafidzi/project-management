@@ -57,10 +57,16 @@ class ApprovalManager extends Component
     #[Layout('layouts.app')]
     public function render()
     {
-        $pendingLogs = DailyLog::with(['user', 'task.project'])
+        $query = DailyLog::with(['user', 'task.project'])
             ->pendingApproval()
-            ->orderBy('log_date', 'desc')
-            ->get();
+            ->orderBy('log_date', 'desc');
+
+        if (auth()->check() && auth()->user()->hasRole('Employee')) {
+            $query->where('user_id', auth()->id());
+        }
+
+        $pendingLogs = $query->get();
+
 
         $recentDecisions = DailyLog::with(['user', 'task.project'])
             ->where('is_backdate', true)

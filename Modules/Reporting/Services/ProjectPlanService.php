@@ -151,6 +151,85 @@ class ProjectPlanService
     }
 
     /**
+     * Update the actual progress for the project plan based on daily logs.
+     * Constraint: Only update entries where period_date <= Today.
+     *
+     * @param Project $project
+     * @return void
+     */
+    public function updateActualProgress(Project $project): void
+    {
+        $today = Carbon::now('Asia/Jakarta')->startOfDay(); // Keep consistent timezone
+
+        // 1. Calculate Daily Actuals from Approved Logs
+        $logs = \Modules\Operations\Models\DailyLog::query()
+            ->whereHas('task', fn($q) => $q->where('project_id', $project->id))
+            ->where('approval_status', 'approved')
+            ->with(['task:id,weight'])
+            ->get();
+
+        $dailyActuals = [];
+        foreach ($logs as $log) {
+            $date = $log->log_date instanceof Carbon ? $log->log_date->format('Y-m-d') : $log->log_date;
+            $weight = (float) ($log->task->weight ?? 0);
+            $increment = (float) $log->progress_increment;
+            
+            // Contribution = (% increment / 100) * Task Weight
+            $val = ($increment / 100.0) * $weight;
+            
+            if (!isset($dailyActuals[$date])) {
+                $dailyActuals[$date] = 0.0;
+            }
+            $dailyActuals[$date] += $val;
+        }
+        ksort($dailyActuals);
+
+        // 2. Iterate Project Plans and Accumulate
+        $plans = ProjectPlan::where('project_id', $project->id)
+            ->orderBy('period_date')
+            ->get();
+
+        $runningTotal = 0.0;
+        $logDates = array_keys($dailyActuals);
+        $logIndex = 0;
+        $logCount = count($logDates);
+
+        foreach ($plans as $plan) {
+            $planDate = $plan->period_date instanceof Carbon 
+                ? $plan->period_date 
+                : Carbon::parse($plan->period_date);
+
+            // Constraint: Do not project actuals into the future
+            if ($planDate->gt($today)) {
+                if ($plan->actual_progress !== null) {
+                    $plan->actual_progress = null;
+                    $plan->saveQuietly();
+                }
+                continue;
+            }
+
+            // Accumulate all logs up to this plan date
+            while ($logIndex < $logCount) {
+                $logDateStr = $logDates[$logIndex];
+                if ($logDateStr <= $planDate->format('Y-m-d')) {
+                    $runningTotal += $dailyActuals[$logDateStr];
+                    $logIndex++;
+                } else {
+                    break;
+                }
+            }
+            
+            $newActual = min($runningTotal, 100.0);
+            
+            // Update if changed
+            if ($plan->actual_progress === null || abs((float)$plan->actual_progress - $newActual) > 0.001) {
+                $plan->actual_progress = round($newActual, 2);
+                $plan->saveQuietly();
+            }
+        }
+    }
+
+    /**
      * Check if a date is a working day (Not Weekend AND Not Holiday).
      *
      * @param Carbon $date

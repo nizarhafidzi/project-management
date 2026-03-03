@@ -8,31 +8,33 @@
         <title>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @stack('styles')
     </head>
-    <body class="tw-font-sans tw-antialiased">
-        <div class="tw-min-h-screen tw-bg-gray-100">
-            <livewire:layout.navigation />
+    <body x-data="{ isSidebarOpen: true, isMobileOpen: false }" class="tw-bg-gray-50 tw-text-gray-800 tw-font-sans tw-antialiased tw-h-screen tw-flex tw-overflow-hidden">
 
-            <!-- Page Heading -->
-            @if (isset($header))
-                <header class="tw-bg-white tw-shadow">
-                    <div class="tw-max-w-7xl tw-mx-auto tw-py-6 tw-px-4 sm:tw-px-6 lg:tw-px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endif
+        <!-- Sidebar -->
+        @include('layouts.partials.sidebar')
 
-            <!-- Page Content -->
-            <main>
+        <!-- Right Column Wrapper -->
+        <div class="tw-flex-1 tw-flex tw-flex-col tw-min-w-0">
+            <!-- Topbar -->
+            @include('layouts.partials.topbar')
+
+            <!-- Main Content -->
+            <main class="tw-flex-1 tw-overflow-y-auto tw-p-6">
                 {{ $slot }}
             </main>
+
+            <!-- Footer -->
+            @include('layouts.partials.footer')
         </div>
+
         <!-- Global Toast Notification -->
         <div x-data="{ show: false, type: 'success', message: '' }"
              x-on:notify.window="show = true; type = $event.detail.type; message = $event.detail.content; setTimeout(() => show = false, 3000)"

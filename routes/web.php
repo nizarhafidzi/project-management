@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AutodeskAuthController;
 
-Route::view('/', 'welcome');
+Route::redirect('/', '/login');
 
 
 // Autodesk Auth Routes

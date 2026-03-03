@@ -31,6 +31,7 @@ class SystemServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Gate::policy(\Modules\System\Models\Setting::class, \Modules\System\Policies\SystemPolicy::class);
 
         \Livewire\Livewire::component('system::auto-checkout-settings', \Modules\System\Livewire\AutoCheckoutSettings::class);
+        \Livewire\Livewire::component('system::user-manager', \Modules\System\Livewire\UserManager::class);
     }
 
     /**

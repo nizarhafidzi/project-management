@@ -1,197 +1,224 @@
-<div>
-    <x-slot name="header">
-        <div class="tw-flex tw-justify-between tw-items-center">
-            <h2 class="tw-font-semibold tw-text-xl tw-text-gray-800 tw-leading-tight">
-                {{ __('Projects') }}
-            </h2>
-            <div class="tw-flex tw-space-x-2">
-                <a href="{{ route('project.create') }}" wire:navigate
-                   class="tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-bg-indigo-600 tw-border tw-border-transparent tw-rounded-md tw-font-semibold tw-text-xs tw-text-white tw-uppercase tw-tracking-widest hover:tw-bg-indigo-700 focus:tw-bg-indigo-700 active:tw-bg-indigo-900 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-indigo-500 focus:tw-ring-offset-2 tw-transition tw-ease-in-out tw-duration-150">
-                    <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    {{ __('New Project') }}
-                </a>
+<div class="tw-max-w-7xl tw-mx-auto sm:tw-px-6 lg:tw-px-8 tw-py-8 tw-font-sans">
+    {{-- Page Header --}}
+    <div class="tw-mb-8 tw-flex tw-flex-col tw-gap-4 md:tw-flex-row md:tw-items-center md:tw-justify-between">
+        <div>
+            <nav class="tw-mb-2 tw-text-sm tw-font-medium tw-text-gray-500">
+                <a href="{{ route('dashboard') }}" wire:navigate class="hover:tw-text-[#174D9D] tw-transition-colors">Home</a>
+                <span class="tw-mx-2">/</span>
+                <span class="tw-text-gray-900">Projects</span>
+            </nav>
+            <h1 class="tw-text-2xl tw-font-bold tw-text-gray-900 tw-tracking-tight">Projects</h1>
+            <p class="tw-mt-1 tw-text-sm tw-text-gray-500">Manage and monitor all your projects in one place.</p>
+        </div>
+        <a href="{{ route('project.create') }}" wire:navigate
+           class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-lg tw-px-5 tw-py-2.5 tw-text-sm tw-font-semibold tw-text-white tw-shadow-sm tw-transition-all tw-duration-200 focus:tw-outline-none focus:tw-ring-4 focus:tw-ring-blue-100"
+           style="background-color: #174D9D;"
+           onmouseover="this.style.backgroundColor='#123d7e'"
+           onmouseout="this.style.backgroundColor='#174D9D'">
+            <svg class="tw-mr-2 tw-h-4 tw-w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Create Project
+        </a>
+    </div>
+
+    {{-- Flash Message --}}
+    @if (session()->has('message'))
+        <div class="tw-mb-6 tw-rounded-lg tw-bg-green-50 tw-p-4 tw-border tw-border-green-200">
+            <div class="tw-flex tw-items-center">
+                <svg class="tw-h-5 tw-w-5 tw-text-green-500 tw-flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.06l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                </svg>
+                <p class="tw-ml-3 tw-text-sm tw-font-medium tw-text-green-800">{{ session('message') }}</p>
             </div>
         </div>
-    </x-slot>
+    @endif
 
-    <div class="tw-py-12">
-        <div class="tw-max-w-7xl tw-mx-auto sm:tw-px-6 lg:tw-px-8">
-
-            {{-- Flash Message --}}
-            @if (session()->has('message'))
-                <div class="tw-mb-4 tw-rounded-md tw-bg-green-50 tw-p-4">
-                    <div class="tw-flex">
-                        <svg class="tw-h-5 tw-w-5 tw-text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.06l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
-                        </svg>
-                        <p class="tw-ml-3 tw-text-sm tw-font-medium tw-text-green-800">{{ session('message') }}</p>
-                    </div>
+    {{-- Filter Card --}}
+    <div class="tw-mb-6 tw-bg-white tw-shadow-sm tw-rounded-lg tw-border tw-border-gray-200 tw-p-5">
+        <div class="tw-flex tw-items-center tw-gap-2 tw-mb-4">
+            <svg class="tw-h-5 tw-w-5 tw-text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+            </svg>
+            <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wider">Filters</h3>
+        </div>
+        <div class="tw-grid tw-gap-4 md:tw-grid-cols-3">
+            {{-- Search --}}
+            <div class="tw-relative">
+                <div class="tw-pointer-events-none tw-absolute tw-inset-y-0 tw-left-0 tw-flex tw-items-center tw-pl-3">
+                    <svg class="tw-h-4 tw-w-4 tw-text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
                 </div>
-            @endif
-
-            {{-- Filters --}}
-            <div class="tw-bg-white tw-overflow-hidden tw-shadow-sm sm:tw-rounded-lg tw-mb-6">
-                <div class="tw-p-6">
-                    <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-4">
-                        <div>
-                            <label class="tw-block tw-text-sm tw-font-medium tw-text-gray-700 tw-mb-1">Search</label>
-                            <input wire:model.live.debounce.300ms="search" type="text"
-                                   placeholder="Search by name, code, or contract..."
-                                   class="tw-w-full tw-border-gray-300 tw-rounded-md tw-shadow-sm focus:tw-border-indigo-500 focus:tw-ring-indigo-500 tw-text-sm">
-                        </div>
-                        <div>
-                            <label class="tw-block tw-text-sm tw-font-medium tw-text-gray-700 tw-mb-1">Status</label>
-                            <select wire:model.live="filterStatus"
-                                    class="tw-w-full tw-border-gray-300 tw-rounded-md tw-shadow-sm focus:tw-border-indigo-500 focus:tw-ring-indigo-500 tw-text-sm">
-                                <option value="">All Statuses</option>
-                                <option value="Active">Active</option>
-                                <option value="Completed">Completed</option>
-                                <option value="On-Hold">On-Hold</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="tw-block tw-text-sm tw-font-medium tw-text-gray-700 tw-mb-1">Sector</label>
-                            <select wire:model.live="filterSector"
-                                    class="tw-w-full tw-border-gray-300 tw-rounded-md tw-shadow-sm focus:tw-border-indigo-500 focus:tw-ring-indigo-500 tw-text-sm">
-                                <option value="">All Sectors</option>
-                                <option value="Building">Building</option>
-                                <option value="Water Resources">Water Resources</option>
-                                <option value="Infrastructure">Infrastructure</option>
-                                <option value="Energy">Energy</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
+                <input wire:model.live.debounce.300ms="search" type="text"
+                       class="tw-block tw-w-full tw-rounded-lg tw-border-gray-300 tw-pl-10 tw-pr-4 tw-py-2.5 tw-text-sm tw-placeholder-gray-400 focus:tw-border-[#174D9D] focus:tw-ring-[#174D9D] tw-transition-colors"
+                       placeholder="Search by name, code, or contract...">
             </div>
 
-            {{-- Projects Table --}}
-            <div class="tw-bg-white tw-overflow-hidden tw-shadow-sm sm:tw-rounded-lg">
-                <div class="tw-overflow-x-auto">
-                    <table class="tw-min-w-full tw-divide-y tw-divide-gray-200">
-                        <thead class="tw-bg-gray-50">
-                            <tr>
-                                <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Project Code</th>
-                                <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Name</th>
-                                <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Type</th>
-                                <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Sector</th>
-                                <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Service</th>
-                                <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Status</th>
-                                <th class="tw-px-6 tw-py-3 tw-text-right tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="tw-bg-white tw-divide-y tw-divide-gray-200">
-                            @forelse ($projects as $project)
-                                <tr class="hover:tw-bg-gray-50 tw-transition-colors tw-duration-150">
-                                    <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap">
-                                        <span class="tw-inline-flex tw-items-center tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-medium tw-bg-indigo-100 tw-text-indigo-800">
-                                            {{ $project->project_code }}
-                                        </span>
-                                    </td>
-                                    <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-font-medium tw-text-gray-900">
-                                        {{ $project->name }}
-                                    </td>
-                                    <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-text-gray-500">
-                                        {{ $project->project_type->value }}
-                                    </td>
-                                    <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-text-gray-500">
-                                        {{ $project->sector->value }}
-                                    </td>
-                                    <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-text-gray-500">
-                                        {{ $project->technical_service->value }}
-                                    </td>
-                                    <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap">
-                                        @php
-                                            $statusColor = match($project->status->value) {
-                                                'Active' => 'tw-bg-green-100 tw-text-green-800',
-                                                'Completed' => 'tw-bg-blue-100 tw-text-blue-800',
-                                                'On-Hold' => 'tw-bg-yellow-100 tw-text-yellow-800',
-                                                default => 'tw-bg-gray-100 tw-text-gray-800',
-                                            };
-                                        @endphp
-                                        <span class="tw-inline-flex tw-items-center tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-medium {{ $statusColor }}">
-                                            {{ $project->status->value }}
-                                        </span>
-                                    </td>
-                                    <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-right tw-text-sm tw-font-medium">
-                                        <div class="tw-flex tw-justify-end tw-space-x-2">
-                                            <a href="{{ route('project.show', $project) }}" wire:navigate
-                                               class="tw-text-indigo-600 hover:tw-text-indigo-900 tw-transition-colors" title="View">
-                                                <svg class="tw-w-5 tw-h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                                </svg>
-                                            </a>
-                                            <a href="{{ route('project.edit', $project) }}" wire:navigate
-                                               class="tw-text-yellow-600 hover:tw-text-yellow-900 tw-transition-colors" title="Edit">
-                                                <svg class="tw-w-5 tw-h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                </svg>
-                                            </a>
-                                            <button wire:click="confirmDelete({{ $project->id }})"
-                                                    class="tw-text-red-600 hover:tw-text-red-900 tw-transition-colors" title="Delete">
-                                                <svg class="tw-w-5 tw-h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="tw-px-6 tw-py-12 tw-text-center tw-text-gray-500">
-                                        <svg class="tw-mx-auto tw-h-12 tw-w-12 tw-text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
-                                        </svg>
-                                        <h3 class="tw-mt-2 tw-text-sm tw-font-medium tw-text-gray-900">No projects found</h3>
-                                        <p class="tw-mt-1 tw-text-sm tw-text-gray-500">Get started by creating a new project.</p>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+            {{-- Status Filter --}}
+            <div>
+                <select wire:model.live="filterStatus"
+                        class="tw-block tw-w-full tw-rounded-lg tw-border-gray-300 tw-py-2.5 tw-text-sm focus:tw-border-[#174D9D] focus:tw-ring-[#174D9D] tw-transition-colors">
+                    <option value="">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                    <option value="On-Hold">On-Hold</option>
+                </select>
+            </div>
 
-                {{-- Pagination --}}
-                @if ($projects->hasPages())
-                    <div class="tw-px-6 tw-py-4 tw-border-t tw-border-gray-200">
-                        {{ $projects->links() }}
-                    </div>
-                @endif
+            {{-- Sector Filter --}}
+            <div>
+                <select wire:model.live="filterSector"
+                        class="tw-block tw-w-full tw-rounded-lg tw-border-gray-300 tw-py-2.5 tw-text-sm focus:tw-border-[#174D9D] focus:tw-ring-[#174D9D] tw-transition-colors">
+                    <option value="">All Sectors</option>
+                    <option value="Building">Building</option>
+                    <option value="Water Resources">Water Resources</option>
+                    <option value="Infrastructure">Infrastructure</option>
+                    <option value="Energy">Energy</option>
+                </select>
             </div>
         </div>
     </div>
 
+    {{-- Projects Table Card --}}
+    <div class="tw-bg-white tw-shadow-sm tw-rounded-lg tw-border tw-border-gray-200 tw-overflow-hidden">
+        <div class="tw-overflow-x-auto">
+            <table class="tw-w-full tw-text-left tw-text-sm">
+                <thead>
+                    <tr class="tw-bg-gray-50 tw-border-b tw-border-gray-200">
+                        <th scope="col" class="tw-px-6 tw-py-3.5 tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-gray-500">Project Code</th>
+                        <th scope="col" class="tw-px-6 tw-py-3.5 tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-gray-500">Name</th>
+                        <th scope="col" class="tw-px-6 tw-py-3.5 tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-gray-500">Type</th>
+                        <th scope="col" class="tw-px-6 tw-py-3.5 tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-gray-500">Sector</th>
+                        <th scope="col" class="tw-px-6 tw-py-3.5 tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-gray-500">Service</th>
+                        <th scope="col" class="tw-px-6 tw-py-3.5 tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-gray-500">Status</th>
+                        <th scope="col" class="tw-px-6 tw-py-3.5 tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-gray-500 tw-text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="tw-divide-y tw-divide-gray-100">
+                    @forelse ($projects as $project)
+                        <tr class="hover:tw-bg-gray-50/70 tw-transition-colors tw-duration-150">
+                            <td class="tw-px-6 tw-py-4">
+                                <span class="tw-inline-flex tw-items-center tw-rounded-md tw-px-2.5 tw-py-1 tw-text-xs tw-font-semibold tw-ring-1 tw-ring-inset"
+                                      style="background-color: rgba(23, 77, 157, 0.08); color: #174D9D; --tw-ring-color: rgba(23, 77, 157, 0.2);">
+                                    {{ $project->project_code }}
+                                </span>
+                            </td>
+                            <td class="tw-px-6 tw-py-4 tw-font-medium tw-text-gray-900">
+                                {{ $project->name }}
+                            </td>
+                            <td class="tw-px-6 tw-py-4 tw-text-gray-600">
+                                {{ $project->project_type->value }}
+                            </td>
+                            <td class="tw-px-6 tw-py-4 tw-text-gray-600">
+                                {{ $project->sector->value }}
+                            </td>
+                            <td class="tw-px-6 tw-py-4 tw-text-gray-600">
+                                {{ $project->technical_service->value }}
+                            </td>
+                            <td class="tw-px-6 tw-py-4">
+                                @php
+                                    $statusConfig = match($project->status->value) {
+                                        'Active' => ['tw-bg-emerald-50 tw-text-emerald-700 tw-ring-emerald-600/20', '●'],
+                                        'Completed' => ['tw-bg-blue-50 tw-text-blue-700 tw-ring-blue-600/20', '●'],
+                                        'On-Hold' => ['tw-bg-amber-50 tw-text-amber-700 tw-ring-amber-600/20', '●'],
+                                        default => ['tw-bg-gray-50 tw-text-gray-700 tw-ring-gray-600/20', '●'],
+                                    };
+                                @endphp
+                                <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-full tw-px-2.5 tw-py-1 tw-text-xs tw-font-semibold tw-ring-1 tw-ring-inset {{ $statusConfig[0] }}">
+                                    <span class="tw-text-[0.5rem]">{{ $statusConfig[1] }}</span>
+                                    {{ $project->status->value }}
+                                </span>
+                            </td>
+                            <td class="tw-px-6 tw-py-4 tw-text-right">
+                                <div class="tw-flex tw-justify-end tw-items-center tw-gap-1">
+                                    <a href="{{ route('project.show', $project) }}" wire:navigate
+                                       class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-lg tw-p-2 tw-text-gray-600 hover:tw-text-[#174D9D] hover:tw-bg-blue-50 tw-transition-all tw-duration-200" title="View">
+                                        <svg class="tw-h-5 tw-w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                    </a>
+                                    <a href="{{ route('project.edit', $project) }}" wire:navigate
+                                       class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-lg tw-p-2 tw-text-gray-600 hover:tw-text-[#174D9D] hover:tw-bg-blue-50 tw-transition-all tw-duration-200" title="Edit">
+                                        <svg class="tw-h-5 tw-w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
+                                        </svg>
+                                    </a>
+                                    <button wire:click="confirmDelete({{ $project->id }})"
+                                            class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-lg tw-p-2 tw-text-gray-600 hover:tw-text-red-600 hover:tw-bg-red-50 tw-transition-all tw-duration-200" title="Delete">
+                                        <svg class="tw-h-5 tw-w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="tw-px-6 tw-py-16 tw-text-center">
+                                <div class="tw-flex tw-flex-col tw-items-center tw-justify-center">
+                                    <div class="tw-rounded-full tw-bg-gray-100 tw-p-4 tw-mb-4">
+                                        <svg class="tw-h-8 tw-w-8 tw-text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="tw-text-sm tw-font-semibold tw-text-gray-900">No projects found</h3>
+                                    <p class="tw-mt-1 tw-text-sm tw-text-gray-500">Get started by creating a new project.</p>
+                                    <a href="{{ route('project.create') }}" wire:navigate
+                                       class="tw-mt-4 tw-inline-flex tw-items-center tw-rounded-lg tw-px-4 tw-py-2 tw-text-sm tw-font-medium tw-text-white tw-shadow-sm tw-transition-all"
+                                       style="background-color: #174D9D;">
+                                        <svg class="tw-mr-1.5 tw-h-4 tw-w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                        </svg>
+                                        New Project
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Pagination --}}
+        @if ($projects->hasPages())
+            <div class="tw-border-t tw-border-gray-200 tw-px-6 tw-py-4 tw-bg-gray-50/50">
+                {{ $projects->links('vendor.pagination.tailwind') }}
+            </div>
+        @endif
+    </div>
+
     {{-- Delete Confirmation Modal --}}
     @if ($showDeleteModal)
-        <div class="tw-fixed tw-inset-0 tw-z-50 tw-overflow-y-auto">
-            <div class="tw-flex tw-items-end tw-justify-center tw-min-h-screen tw-pt-4 tw-px-4 tw-pb-20 tw-text-center sm:tw-block sm:tw-p-0">
-                <div class="tw-fixed tw-inset-0 tw-bg-gray-500 tw-bg-opacity-75 tw-transition-opacity" wire:click="cancelDelete"></div>
-                <div class="tw-inline-block tw-align-bottom tw-bg-white tw-rounded-lg tw-text-left tw-overflow-hidden tw-shadow-xl tw-transform tw-transition-all sm:tw-my-8 sm:tw-align-middle sm:tw-max-w-lg sm:tw-w-full">
-                    <div class="tw-bg-white tw-px-4 tw-pt-5 tw-pb-4 sm:tw-p-6 sm:tw-pb-4">
-                        <div class="sm:tw-flex sm:tw-items-start">
-                            <div class="tw-mx-auto tw-flex-shrink-0 tw-flex tw-items-center tw-justify-center tw-h-12 tw-w-12 tw-rounded-full tw-bg-red-100 sm:tw-mx-0 sm:tw-h-10 sm:tw-w-10">
-                                <svg class="tw-h-6 tw-w-6 tw-text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+        <div class="tw-fixed tw-inset-0 tw-z-50 tw-overflow-y-auto" x-data x-transition>
+            <div class="tw-flex tw-min-h-screen tw-items-center tw-justify-center tw-p-4">
+                {{-- Backdrop with blur --}}
+                <div class="tw-fixed tw-inset-0 tw-bg-gray-900/60 tw-backdrop-blur-sm tw-transition-opacity" wire:click="cancelDelete"></div>
+
+                {{-- Modal Card --}}
+                <div class="tw-relative tw-w-full tw-max-w-md tw-transform tw-overflow-hidden tw-rounded-lg tw-bg-white tw-shadow-2xl tw-transition-all">
+                    <div class="tw-p-6">
+                        <div class="tw-flex tw-items-start tw-gap-4">
+                            <div class="tw-flex tw-h-12 tw-w-12 tw-flex-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-bg-red-100">
+                                <svg class="tw-h-6 tw-w-6 tw-text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
                                 </svg>
                             </div>
-                            <div class="tw-mt-3 tw-text-center sm:tw-mt-0 sm:tw-ml-4 sm:tw-text-left">
-                                <h3 class="tw-text-lg tw-leading-6 tw-font-medium tw-text-gray-900">Delete Project</h3>
-                                <div class="tw-mt-2">
-                                    <p class="tw-text-sm tw-text-gray-500">Are you sure you want to delete this project? This action cannot be undone.</p>
-                                </div>
+                            <div>
+                                <h3 class="tw-text-lg tw-font-semibold tw-text-gray-900">Delete Project</h3>
+                                <p class="tw-mt-2 tw-text-sm tw-text-gray-500">Are you sure you want to delete this project? All related data will be permanently removed. This action cannot be undone.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="tw-bg-gray-50 tw-px-4 tw-py-3 sm:tw-px-6 sm:tw-flex sm:tw-flex-row-reverse">
-                        <button wire:click="deleteProject" type="button"
-                                class="tw-w-full tw-inline-flex tw-justify-center tw-rounded-md tw-border tw-border-transparent tw-shadow-sm tw-px-4 tw-py-2 tw-bg-red-600 tw-text-base tw-font-medium tw-text-white hover:tw-bg-red-700 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-offset-2 focus:tw-ring-red-500 sm:tw-ml-3 sm:tw-w-auto sm:tw-text-sm">
-                            Delete
-                        </button>
+                    <div class="tw-flex tw-items-center tw-justify-end tw-gap-3 tw-border-t tw-border-gray-100 tw-bg-gray-50 tw-px-6 tw-py-4">
                         <button wire:click="cancelDelete" type="button"
-                                class="tw-mt-3 tw-w-full tw-inline-flex tw-justify-center tw-rounded-md tw-border tw-border-gray-300 tw-shadow-sm tw-px-4 tw-py-2 tw-bg-white tw-text-base tw-font-medium tw-text-gray-700 hover:tw-bg-gray-50 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-offset-2 focus:tw-ring-indigo-500 sm:tw-mt-0 sm:tw-ml-3 sm:tw-w-auto sm:tw-text-sm">
+                                class="tw-inline-flex tw-items-center tw-rounded-lg tw-border tw-border-gray-300 tw-bg-white tw-px-4 tw-py-2 tw-text-sm tw-font-medium tw-text-gray-700 tw-shadow-sm hover:tw-bg-gray-50 tw-transition-colors focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-gray-300">
                             Cancel
+                        </button>
+                        <button wire:click="deleteProject" type="button"
+                                class="tw-inline-flex tw-items-center tw-rounded-lg tw-border tw-border-transparent tw-bg-red-600 tw-px-4 tw-py-2 tw-text-sm tw-font-medium tw-text-white tw-shadow-sm hover:tw-bg-red-700 tw-transition-colors focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-red-500">
+                            Delete Project
                         </button>
                     </div>
                 </div>

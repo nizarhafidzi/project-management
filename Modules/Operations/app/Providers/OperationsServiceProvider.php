@@ -27,7 +27,15 @@ class OperationsServiceProvider extends ServiceProvider
         $this->registerConfig();
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
+
+        // Fix for Bug 2: Register Livewire components manually to handle alias mismatch
+        \Livewire\Livewire::component('modules.operations.livewire.daily-log-form', \Modules\Operations\Livewire\DailyLogForm::class);
+        \Livewire\Livewire::component('operations::daily-log-form', \Modules\Operations\Livewire\DailyLogForm::class);
+
+        // Register DailyLog Observer
+        \Modules\Operations\Models\DailyLog::observe(\Modules\Operations\Observers\DailyLogObserver::class);
     }
+
 
     /**
      * Register the service provider.
@@ -43,7 +51,9 @@ class OperationsServiceProvider extends ServiceProvider
      */
     protected function registerCommands(): void
     {
-        // $this->commands([]);
+        $this->commands([
+            \Modules\Operations\Console\RecalculateTaskProgress::class,
+        ]);
     }
 
     /**

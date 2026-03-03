@@ -42,7 +42,11 @@ class Project extends Model
             'technical_service' => TechnicalService::class,
             'sector' => ProjectSector::class,
             'status' => ProjectStatus::class,
+            'start_date' => 'date',
+            'end_date' => 'date',
+            'contract_date' => 'date',
         ];
+
     }
 
     /**

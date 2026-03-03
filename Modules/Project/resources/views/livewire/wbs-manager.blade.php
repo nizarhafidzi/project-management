@@ -1,238 +1,290 @@
-<div>
-    {{-- Header moved inside component to enabled wire:click --}}
-    <div class="tw-bg-white tw-shadow">
-        <div class="tw-max-w-7xl tw-mx-auto tw-py-6 tw-px-4 sm:tw-px-6 lg:tw-px-8">
-            <div class="tw-flex tw-justify-between tw-items-center">
-                <div>
-                    <h2 class="tw-font-semibold tw-text-xl tw-text-gray-800 tw-leading-tight">
-                        {{ __('WBS Planning') }}
-                    </h2>
-                    <p class="tw-mt-1 tw-text-sm tw-text-gray-500">
-                        {{ $project->project_code }} — {{ $project->name }}
-                    </p>
-                </div>
-                <div class="tw-flex tw-space-x-3">
-                    @if ($canManage)
-                        {{-- Import/Export Actions --}}
-                        <div class="tw-relative" x-data="{ open: false }">
-                            <button @click="open = !open" @click.away="open = false" 
-                                class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-md tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors">
-                                <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                Excel
-                                <svg class="tw-w-4 tw-h-4 tw-ml-2 -tw-mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            <div x-show="open" x-cloak 
-                                class="tw-absolute tw-right-0 tw-mt-2 tw-w-48 tw-bg-white tw-rounded-md tw-shadow-lg tw-origin-top-right tw-ring-1 tw-ring-black tw-ring-opacity-5 focus:tw-outline-none tw-z-50">
-                                <div class="tw-py-1">
-                                    <button wire:click="downloadTemplate" class="tw-block tw-w-full tw-text-left tw-px-4 tw-py-2 tw-text-sm tw-text-gray-700 hover:tw-bg-gray-100">
-                                        Download Template
-                                    </button>
-                                    <button @click="$dispatch('open-import-modal'); open = false" class="tw-block tw-w-full tw-text-left tw-px-4 tw-py-2 tw-text-sm tw-text-gray-700 hover:tw-bg-gray-100">
-                                        Import Excel
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+<div class="tw-font-sans">
 
+    {{-- ═══════════════════════════════════════════════════════════════
+         BREADCRUMBS & PAGE HEADER
+    ═══════════════════════════════════════════════════════════════ --}}
+    <div class="tw-mb-6">
+        {{-- Breadcrumbs --}}
+        <nav class="tw-flex tw-items-center tw-space-x-1 tw-text-sm tw-text-gray-500 tw-mb-2">
+            <a href="{{ route('dashboard') }}" class="hover:tw-text-[#174D9D] tw-transition-colors">Dashboard</a>
+            <svg class="tw-w-4 tw-h-4 tw-text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <a href="{{ route('project.index') }}" class="hover:tw-text-[#174D9D] tw-transition-colors">Projects</a>
+            <svg class="tw-w-4 tw-h-4 tw-text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <a href="{{ route('project.show', $project) }}" class="hover:tw-text-[#174D9D] tw-transition-colors">{{ $project->name }}</a>
+            <svg class="tw-w-4 tw-h-4 tw-text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <span class="tw-text-gray-800 tw-font-medium">WBS</span>
+        </nav>
+
+        {{-- Title & Description --}}
+        <div class="tw-flex tw-items-center tw-justify-between tw-flex-wrap tw-gap-2">
+            <div>
+                <h1 class="tw-text-2xl tw-font-bold tw-text-gray-900">Work Breakdown Structure</h1>
+                <p class="tw-text-sm tw-text-gray-500 tw-mt-0.5">{{ $project->project_code }} — {{ $project->name }}</p>
+            </div>
+            <a href="{{ route('project.show', $project) }}" wire:navigate
+               class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors tw-shadow-sm">
+                <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Project
+            </a>
+        </div>
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════
+         TOOLBAR / ACTION ROW
+    ═══════════════════════════════════════════════════════════════ --}}
+    <div class="tw-flex tw-flex-wrap tw-gap-3 tw-mb-4">
+        @if ($canManage)
+            {{-- Primary: Add Root Task --}}
+            <button wire:click="openCreateModal"
+                    class="tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-rounded-lg tw-text-sm tw-font-medium tw-text-white tw-shadow-sm tw-transition-colors tw-border tw-border-transparent"
+                    style="background-color: #174D9D;"
+                    onmouseover="this.style.backgroundColor='#123f82'" onmouseout="this.style.backgroundColor='#174D9D'">
+                <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Root Task
+            </button>
+        @endif
+
+        {{-- Secondary: Expand All --}}
+        <button wire:click="expandAll"
+                class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors tw-shadow-sm">
+            <svg class="tw-w-4 tw-h-4 tw-mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+            </svg>
+            Expand All
+        </button>
+
+        {{-- Secondary: Collapse All --}}
+        <button wire:click="collapseAll"
+                class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors tw-shadow-sm">
+            <svg class="tw-w-4 tw-h-4 tw-mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"/>
+            </svg>
+            Collapse All
+        </button>
+
+        @if ($canManage)
+            {{-- Secondary: Import/Export Dropdown --}}
+            <div class="tw-relative" x-data="{ open: false }">
+                <button @click="open = !open" @click.away="open = false"
+                        class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors tw-shadow-sm">
+                    <svg class="tw-w-4 tw-h-4 tw-mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Import / Export
+                    <svg class="tw-w-4 tw-h-4 tw-ml-1.5 -tw-mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div x-show="open" x-cloak x-transition
+                     class="tw-absolute tw-right-0 tw-mt-2 tw-w-48 tw-bg-white tw-rounded-lg tw-shadow-lg tw-ring-1 tw-ring-black tw-ring-opacity-5 tw-z-50">
+                    <div class="tw-py-1">
+                        <button wire:click="downloadTemplate"
+                                class="tw-flex tw-items-center tw-w-full tw-text-left tw-px-4 tw-py-2 tw-text-sm tw-text-gray-700 hover:tw-bg-gray-50 tw-transition-colors">
+                            <svg class="tw-w-4 tw-h-4 tw-mr-2 tw-text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Download Template
+                        </button>
+                        <button @click="$dispatch('open-import-modal'); open = false"
+                                class="tw-flex tw-items-center tw-w-full tw-text-left tw-px-4 tw-py-2 tw-text-sm tw-text-gray-700 hover:tw-bg-gray-50 tw-transition-colors">
+                            <svg class="tw-w-4 tw-h-4 tw-mr-2 tw-text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                            Import Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Secondary: Check BIM Updates --}}
+            <button wire:click="checkForUpdates" wire:loading.attr="disabled"
+                    class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors tw-shadow-sm">
+                <svg wire:loading.remove wire:target="checkForUpdates" class="tw-w-4 tw-h-4 tw-mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <svg wire:loading wire:target="checkForUpdates" class="tw-animate-spin tw-w-4 tw-h-4 tw-mr-1.5" fill="none" viewBox="0 0 24 24">
+                    <circle class="tw-opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="tw-opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span wire:loading.remove wire:target="checkForUpdates">Check BIM Updates</span>
+                <span wire:loading wire:target="checkForUpdates">Checking...</span>
+            </button>
+
+            {{-- Secondary: Recalculate S-Curve --}}
+            <button wire:click="recalculateSCurve" wire:loading.attr="disabled"
+                    class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors tw-shadow-sm">
+                <svg wire:loading.remove wire:target="recalculateSCurve" class="tw-w-4 tw-h-4 tw-mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <svg wire:loading wire:target="recalculateSCurve" class="tw-animate-spin tw-w-4 tw-h-4 tw-mr-1.5" fill="none" viewBox="0 0 24 24">
+                    <circle class="tw-opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="tw-opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Recalculate S-Curve
+            </button>
+        @endif
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════
+         FLASH MESSAGES & WARNINGS
+    ═══════════════════════════════════════════════════════════════ --}}
+    @if (session()->has('message'))
+        <div class="tw-rounded-lg tw-bg-green-50 tw-p-4 tw-mb-4 tw-border tw-border-green-200">
+            <div class="tw-flex tw-items-center">
+                <svg class="tw-h-5 tw-w-5 tw-text-green-500 tw-flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.06l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
+                </svg>
+                <p class="tw-ml-3 tw-text-sm tw-font-medium tw-text-green-800">{{ session('message') }}</p>
+            </div>
+        </div>
+    @endif
+
+    @if (!$canManage)
+        <div class="tw-rounded-lg tw-bg-amber-50 tw-p-4 tw-mb-4 tw-border tw-border-amber-200">
+            <div class="tw-flex tw-items-center">
+                <svg class="tw-h-5 tw-w-5 tw-text-amber-500 tw-flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                </svg>
+                <p class="tw-ml-3 tw-text-sm tw-font-medium tw-text-amber-800">
+                    You have read-only access. Only Team Leaders, Managers, and Superadmins can manage WBS tasks.
+                </p>
+            </div>
+        </div>
+    @endif
+
+    {{-- ═══════════════════════════════════════════════════════════════
+         TREE GRID CARD
+    ═══════════════════════════════════════════════════════════════ --}}
+    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-shadow-sm tw-overflow-hidden">
+
+        {{-- Card Header: Title + Weight Badge + Task Count --}}
+        <div class="tw-px-5 tw-py-4 tw-flex tw-items-center tw-justify-between tw-border-b tw-border-gray-200 tw-bg-gray-50/50">
+            <div class="tw-flex tw-items-center tw-space-x-3">
+                <div class="tw-flex tw-items-center tw-justify-center tw-w-8 tw-h-8 tw-rounded-lg" style="background-color: rgba(23, 77, 157, 0.1);">
+                    <svg class="tw-w-4 tw-h-4" style="color: #174D9D;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                    </svg>
+                </div>
+                <h3 class="tw-text-base tw-font-semibold tw-text-gray-900">Task Tree</h3>
+                @if ($rootTasks->count() > 0)
+                    <span class="tw-inline-flex tw-items-center tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-medium
+                        {{ $rootWeightInfo['is_valid'] ? 'tw-bg-green-100 tw-text-green-800' : 'tw-bg-red-100 tw-text-red-800' }}">
+                        Weight: {{ $rootWeightInfo['sum'] }}% / {{ $rootWeightInfo['expected'] }}%
+                        @if ($rootWeightInfo['is_valid'])
+                            <svg class="tw-ml-1 tw-w-3.5 tw-h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        @else
+                            <svg class="tw-ml-1 tw-w-3.5 tw-h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        @endif
+                    </span>
+                @endif
+            </div>
+            <span class="tw-inline-flex tw-items-center tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-medium tw-bg-gray-100 tw-text-gray-700">
+                {{ $project->tasks()->count() }} total tasks
+            </span>
+        </div>
+
+        @if ($rootTasks->count() > 0)
+            {{-- ═══════════ TREE GRID HEADER ═══════════ --}}
+            <div class="tw-hidden md:tw-grid tw-grid-cols-12 tw-gap-2 tw-bg-gray-50 tw-border-b tw-border-gray-200 tw-px-4 tw-py-3 tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-tracking-wider">
+                <div class="tw-col-span-4">Task Name</div>
+                <div class="tw-col-span-1 tw-text-center">WBS Code</div>
+                <div class="tw-col-span-1 tw-text-center">Weight (%)</div>
+                <div class="tw-col-span-1 tw-text-center">Start Date</div>
+                <div class="tw-col-span-1 tw-text-center">End Date</div>
+                <div class="tw-col-span-1 tw-text-center">Progress</div>
+                <div class="tw-col-span-1 tw-text-center">Assigned</div>
+                <div class="tw-col-span-2 tw-text-right">Actions</div>
+            </div>
+
+            {{-- ═══════════ TASK ROWS ═══════════ --}}
+            <div class="tw-divide-y tw-divide-gray-100">
+                @foreach ($rootTasks as $task)
+                    @include('project::livewire.partials.wbs-task-row', ['task' => $task, 'depth' => 0])
+                @endforeach
+            </div>
+        @else
+            {{-- ═══════════ EMPTY STATE ═══════════ --}}
+            <div class="tw-text-center tw-py-16 tw-px-6">
+                <div class="tw-mx-auto tw-flex tw-items-center tw-justify-center tw-w-16 tw-h-16 tw-rounded-full tw-bg-gray-100 tw-mb-4">
+                    <svg class="tw-h-8 tw-w-8 tw-text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                    </svg>
+                </div>
+                <h3 class="tw-text-base tw-font-semibold tw-text-gray-900">No tasks yet</h3>
+                <p class="tw-mt-1 tw-text-sm tw-text-gray-500">Get started by adding your first WBS task.</p>
+                @if ($canManage)
+                    <div class="tw-mt-6">
                         <button wire:click="openCreateModal"
-                                class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-transparent tw-rounded-md tw-text-sm tw-font-medium tw-text-white tw-bg-indigo-600 hover:tw-bg-indigo-700 tw-transition-colors">
+                                class="tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-rounded-lg tw-shadow-sm tw-text-sm tw-font-medium tw-text-white tw-transition-colors tw-border tw-border-transparent"
+                                style="background-color: #174D9D;"
+                                onmouseover="this.style.backgroundColor='#123f82'" onmouseout="this.style.backgroundColor='#174D9D'">
                             <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                             </svg>
-                            Add Root Task
+                            Add First Task
                         </button>
-                    @endif
-                    <button wire:click="expandAll"
-                            class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-md tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors">
-                        <svg class="tw-w-4 tw-h-4 tw-mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
-                        </svg>
-                        Expand
-                    </button>
-                    <button wire:click="collapseAll"
-                            class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-md tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors">
-                        <svg class="tw-w-4 tw-h-4 tw-mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"/>
-                        </svg>
-                        Collapse
-                    </button>
-                    @if ($canManage)
-                        <button wire:click="checkForUpdates" wire:loading.attr="disabled"
-                                class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-md tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors">
-                            <svg wire:loading.remove wire:target="checkForUpdates" class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <svg wire:loading wire:target="checkForUpdates" class="tw-animate-spin tw-w-4 tw-h-4 tw-mr-2" fill="none" viewBox="0 0 24 24">
-                                <circle class="tw-opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="tw-opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span wire:loading.remove wire:target="checkForUpdates">Check BIM Updates</span>
-                            <span wire:loading wire:target="checkForUpdates">Checking...</span>
-                        </button>
-
-                        <button wire:click="recalculateSCurve" wire:loading.attr="disabled"
-                                class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-md tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors">
-                            <svg wire:loading.remove wire:target="recalculateSCurve" class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                            <svg wire:loading wire:target="recalculateSCurve" class="tw-animate-spin tw-w-4 tw-h-4 tw-mr-2" fill="none" viewBox="0 0 24 24">
-                                <circle class="tw-opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="tw-opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Recalculate S-Curve
-                        </button>
-                    @endif
-                    <a href="{{ route('project.show', $project) }}" wire:navigate
-                       class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-md tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors">
-                        <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                        </svg>
-                        Back
-                    </a>
-                </div>
+                    </div>
+                @endif
             </div>
-        </div>
+        @endif
     </div>
 
-    <div class="tw-py-12">
-        <div class="tw-max-w-7xl tw-mx-auto sm:tw-px-6 lg:tw-px-8 tw-space-y-6">
-
-            {{-- Flash Messages --}}
-            @if (session()->has('message'))
-                <div class="tw-rounded-md tw-bg-green-50 tw-p-4">
-                    <div class="tw-flex">
-                        <svg class="tw-h-5 tw-w-5 tw-text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.06l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
-                        </svg>
-                        <p class="tw-ml-3 tw-text-sm tw-font-medium tw-text-green-800">{{ session('message') }}</p>
-                    </div>
-                </div>
-            @endif
-
-            {{-- Access warning --}}
-            @if (!$canManage)
-                <div class="tw-rounded-md tw-bg-yellow-50 tw-p-4">
-                    <div class="tw-flex">
-                        <svg class="tw-h-5 tw-w-5 tw-text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-                        </svg>
-                        <p class="tw-ml-3 tw-text-sm tw-font-medium tw-text-yellow-800">
-                            You have read-only access. Only Team Leaders, Managers, and Superadmins can manage WBS tasks.
-                        </p>
-                    </div>
-                </div>
-            @endif
-
-            {{-- Root Weight Summary --}}
-            <div class="tw-bg-white tw-overflow-hidden tw-shadow-sm sm:tw-rounded-lg">
-                <div class="tw-px-6 tw-py-4 tw-flex tw-items-center tw-justify-between tw-border-b tw-border-gray-200">
-                    <div class="tw-flex tw-items-center tw-space-x-4">
-                        <h3 class="tw-text-lg tw-leading-6 tw-font-medium tw-text-gray-900">Work Breakdown Structure</h3>
-                        @if ($rootTasks->count() > 0)
-                            <span class="tw-inline-flex tw-items-center tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-medium
-                                {{ $rootWeightInfo['is_valid'] ? 'tw-bg-green-100 tw-text-green-800' : 'tw-bg-red-100 tw-text-red-800' }}">
-                                Weight: {{ $rootWeightInfo['sum'] }}% / {{ $rootWeightInfo['expected'] }}%
-                                @if ($rootWeightInfo['is_valid'])
-                                    <svg class="tw-ml-1 tw-w-3.5 tw-h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                @else
-                                    <svg class="tw-ml-1 tw-w-3.5 tw-h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                                    </svg>
-                                @endif
-                            </span>
-                        @endif
-                    </div>
-                    <span class="tw-inline-flex tw-items-center tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-medium tw-bg-gray-100 tw-text-gray-800">
-                        {{ $project->tasks()->count() }} total tasks
-                    </span>
-                </div>
-
-                <div class="tw-p-6">
-                    @if ($rootTasks->count() > 0)
-                        {{-- Table Header --}}
-                        <div class="tw-grid tw-grid-cols-12 tw-gap-2 tw-px-3 tw-py-2 tw-bg-gray-50 tw-rounded-t-md tw-border tw-border-gray-200 tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">
-                            <div class="tw-col-span-3">Task</div>
-                            <div class="tw-col-span-2">Linked File</div>
-                            <div class="tw-col-span-1 tw-text-center">Assigned To</div>
-                            <div class="tw-col-span-1 tw-text-center">Weight</div>
-                            <div class="tw-col-span-1 tw-text-center">Start Date</div>
-                            <div class="tw-col-span-1 tw-text-center">End Date</div>
-                            <div class="tw-col-span-1 tw-text-center">Progress</div>
-                            <div class="tw-col-span-2 tw-text-right">Actions</div>
-                        </div>
-
-                        {{-- Task Tree --}}
-                        <div class="tw-border tw-border-t-0 tw-border-gray-200 tw-rounded-b-md tw-divide-y tw-divide-gray-100">
-                            @foreach ($rootTasks as $task)
-                                @include('project::livewire.partials.wbs-task-row', ['task' => $task, 'depth' => 0])
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="tw-text-center tw-py-12">
-                            <svg class="tw-mx-auto tw-h-12 tw-w-12 tw-text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-                            </svg>
-                            <h3 class="tw-mt-2 tw-text-sm tw-font-medium tw-text-gray-900">No tasks yet</h3>
-                            <p class="tw-mt-1 tw-text-sm tw-text-gray-500">Get started by adding your first WBS task.</p>
-                            @if ($canManage)
-                                <div class="tw-mt-6">
-                                    <button wire:click="openCreateModal"
-                                            class="tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-border tw-border-transparent tw-rounded-md tw-shadow-sm tw-text-sm tw-font-medium tw-text-white tw-bg-indigo-600 hover:tw-bg-indigo-700 tw-transition-colors">
-                                        <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                        </svg>
-                                        Add First Task
-                                    </button>
-                                </div>
-                            @endif
-                        </div>
-                    @endif
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    {{-- Create / Edit Task Modal --}}
+    {{-- ═══════════════════════════════════════════════════════════════
+         CREATE / EDIT TASK MODAL
+    ═══════════════════════════════════════════════════════════════ --}}
     @if ($showTaskModal)
         <div class="tw-fixed tw-inset-0 tw-z-50 tw-overflow-y-auto">
-            <div class="tw-flex tw-items-end tw-justify-center tw-min-h-screen tw-pt-4 tw-px-4 tw-pb-20 tw-text-center sm:tw-block sm:tw-p-0">
-                <div class="tw-fixed tw-inset-0 tw-bg-gray-500 tw-bg-opacity-75 tw-transition-opacity" wire:click="closeModal"></div>
-                <div class="tw-inline-block tw-align-bottom tw-bg-white tw-rounded-lg tw-text-left tw-overflow-hidden tw-shadow-xl tw-transform tw-transition-all sm:tw-my-8 sm:tw-align-middle sm:tw-max-w-lg sm:tw-w-full">
-                    <div class="tw-bg-white tw-px-4 tw-pt-5 tw-pb-4 sm:tw-p-6">
-                        <h3 class="tw-text-lg tw-leading-6 tw-font-medium tw-text-gray-900 tw-mb-1">
-                            {{ $isEditing ? 'Edit Task' : 'Add New Task' }}
-                        </h3>
-                        <p class="tw-text-sm tw-text-gray-500 tw-mb-4">
-                            Parent: <span class="tw-font-medium">{{ $parentLabel }}</span>
-                            · WBS Code: <span class="tw-font-mono tw-font-medium tw-text-indigo-600">{{ $formWbsCode }}</span>
-                        </p>
+            <div class="tw-flex tw-items-center tw-justify-center tw-min-h-screen tw-px-4 tw-py-6">
 
+                {{-- Backdrop --}}
+                <div class="tw-fixed tw-inset-0 tw-bg-gray-900/60 tw-backdrop-blur-sm tw-transition-opacity" wire:click="closeModal"></div>
+
+                {{-- Modal Panel --}}
+                <div class="tw-relative tw-bg-white tw-rounded-xl tw-shadow-2xl tw-w-full tw-max-w-lg tw-transform tw-transition-all">
+
+                    {{-- Header --}}
+                    <div class="tw-px-6 tw-py-4 tw-border-b tw-border-gray-200">
+                        <div class="tw-flex tw-items-center tw-justify-between">
+                            <div>
+                                <h3 class="tw-text-lg tw-font-semibold tw-text-gray-900">
+                                    {{ $isEditing ? 'Edit Task' : 'Add New Task' }}
+                                </h3>
+                                <p class="tw-text-sm tw-text-gray-500 tw-mt-0.5">
+                                    Parent: <span class="tw-font-medium">{{ $parentLabel }}</span>
+                                    · WBS Code: <span class="tw-font-mono tw-font-semibold" style="color: #174D9D;">{{ $formWbsCode }}</span>
+                                </p>
+                            </div>
+                            <button wire:click="closeModal" class="tw-p-1 tw-rounded-lg tw-text-gray-400 hover:tw-text-gray-600 hover:tw-bg-gray-100 tw-transition-colors">
+                                <svg class="tw-w-5 tw-h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Body --}}
+                    <div class="tw-px-6 tw-py-5">
                         @if ($errors->any())
-                            <div class="tw-mb-4 tw-rounded-md tw-bg-red-50 tw-p-4">
+                            <div class="tw-mb-5 tw-rounded-lg tw-bg-red-50 tw-border tw-border-red-200 tw-p-4">
                                 <div class="tw-flex">
-                                    <div class="tw-flex-shrink-0">
-                                        <svg class="tw-h-5 tw-w-5 tw-text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                                        </svg>
-                                    </div>
+                                    <svg class="tw-h-5 tw-w-5 tw-text-red-400 tw-flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                    </svg>
                                     <div class="tw-ml-3">
-                                        <h3 class="tw-text-sm tw-font-medium tw-text-red-800">
-                                            There were errors with your submission
-                                        </h3>
-                                        <div class="tw-mt-2 tw-text-sm tw-text-red-700">
-                                            <ul role="list" class="tw-list-disc tw-pl-5 tw-space-y-1">
-                                                @foreach ($errors->all() as $error)
-                                                    <li>{{ $error }}</li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
+                                        <h3 class="tw-text-sm tw-font-medium tw-text-red-800">There were errors with your submission</h3>
+                                        <ul class="tw-mt-2 tw-text-sm tw-text-red-700 tw-list-disc tw-pl-5 tw-space-y-1">
+                                            @foreach ($errors->all() as $error)
+                                                <li>{{ $error }}</li>
+                                            @endforeach
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
@@ -271,18 +323,16 @@
                                 </div>
                             </div>
 
-                            </div>
-
                             {{-- Assigned To --}}
                             @if($canManage)
                             <div>
                                 <x-input-label for="formAssignedTo" :value="__('Assigned To')" />
                                 <select wire:model="formAssignedTo" id="formAssignedTo"
-                                        class="tw-mt-1 tw-block tw-w-full tw-border-gray-300 tw-rounded-md tw-shadow-sm focus:tw-border-indigo-500 focus:tw-ring-indigo-500 sm:tw-text-sm">
+                                        class="tw-mt-1 tw-block tw-w-full tw-border-gray-300 tw-rounded-lg tw-shadow-sm focus:tw-border-[#174D9D] focus:tw-ring-[#174D9D] tw-text-sm">
                                     <option value="">-- Unassigned --</option>
                                     @foreach($projectMembers as $member)
                                         <option value="{{ $member->id }}">
-                                            {{ $member->name }} 
+                                            {{ $member->name }}
                                             @if($member->pivot && $member->pivot->role_in_project)
                                                 ({{ $member->pivot->role_in_project }})
                                             @endif
@@ -293,18 +343,18 @@
                             </div>
                             @endif
 
-                            {{-- ACC File Link (Inline) --}}
+                            {{-- ACC File Link --}}
                             <div x-data="{ openPicker: @entangle('showFilePicker') }">
                                 <x-input-label for="formAccFileName" :value="__('Linked ACC File')" />
-                                <div class="tw-mt-1 tw-flex tw-rounded-md tw-shadow-sm">
-                                    <div class="tw-relative tw-flex-grow tw-focus-within:tw-z-10">
+                                <div class="tw-mt-1 tw-flex tw-rounded-lg tw-shadow-sm">
+                                    <div class="tw-relative tw-flex-grow focus-within:tw-z-10">
                                         <x-text-input wire:model="formAccFileName" id="formAccFileName" type="text" readonly
-                                                      class="tw-block tw-w-full tw-rounded-none tw-rounded-l-md tw-bg-gray-50 tw-text-gray-500" 
+                                                      class="tw-block tw-w-full tw-rounded-none tw-rounded-l-lg tw-bg-gray-50 tw-text-gray-500"
                                                       placeholder="No file selected" />
                                     </div>
                                     <button type="button" @click="openPicker = !openPicker"
-                                            class="tw-relative tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-border tw-border-gray-300 tw-text-sm tw-font-medium tw-rounded-r-md tw-text-gray-700 tw-bg-gray-50 hover:tw-bg-gray-100 focus:tw-outline-none focus:tw-ring-1 focus:tw-ring-indigo-500 focus:tw-border-indigo-500">
-                                        <svg class="-tw-ml-1 tw-mr-2 tw-h-5 tw-w-5 tw-text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            class="tw-relative tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-border tw-border-gray-300 tw-text-sm tw-font-medium tw-rounded-r-lg tw-text-gray-700 tw-bg-gray-50 hover:tw-bg-gray-100 tw-transition-colors">
+                                        <svg class="-tw-ml-1 tw-mr-2 tw-h-4 tw-w-4 tw-text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                         </svg>
                                         <span x-text="openPicker ? 'Close Picker' : 'Select File'"></span>
@@ -312,25 +362,19 @@
                                 </div>
                                 @if($formAccFileUrn)
                                     <p class="tw-mt-1 tw-text-xs tw-text-green-600">
-                                        Linked. Version: {{ $formAccFileVersion ?? 'Unknown' }}
+                                        ✓ Linked. Version: {{ $formAccFileVersion ?? 'Unknown' }}
                                     </p>
                                 @endif
                                 <x-input-error :messages="$errors->get('formAccFileName')" class="tw-mt-1" />
 
-                                {{-- Inline Picker Container --}}
-                                <div x-show="openPicker" x-cloak 
-                                     class="tw-mt-2 tw-border tw-border-gray-200 tw-rounded-md tw-bg-gray-50 tw-p-2"
-                                     x-transition:enter="tw-transition tw-ease-out tw-duration-100"
-                                     x-transition:enter-start="tw-opacity-0 tw-transform tw-scale-95"
-                                     x-transition:enter-end="tw-opacity-100 tw-transform tw-scale-100"
-                                     x-transition:leave="tw-transition tw-ease-in tw-duration-75"
-                                     x-transition:leave-start="tw-opacity-100 tw-transform tw-scale-100"
-                                     x-transition:leave-end="tw-opacity-0 tw-transform tw-scale-95">
-                                     
+                                {{-- Inline Picker --}}
+                                <div x-show="openPicker" x-cloak
+                                     class="tw-mt-2 tw-border tw-border-gray-200 tw-rounded-lg tw-bg-gray-50 tw-p-3"
+                                     x-transition>
                                     @if($project->acc_project_id)
-                                        <livewire:project::acc-file-picker 
-                                            :projectId="$project->acc_project_id" 
-                                            :hubId="$project->acc_account_id" 
+                                        <livewire:project::acc-file-picker
+                                            :projectId="$project->acc_project_id"
+                                            :hubId="$project->acc_account_id"
                                             wire:key="acc-picker-{{ $project->id }}"
                                         />
                                     @else
@@ -341,82 +385,106 @@
                                 </div>
                             </div>
                         </div>
-                            <div class="tw-px-4 tw-py-3 sm:tw-px-6 sm:tw-flex sm:tw-flex-row-reverse">
-                            <button wire:click="saveTask" type="button"
-                                    class="tw-w-full tw-inline-flex tw-justify-center tw-rounded-md tw-border tw-border-transparent tw-shadow-sm tw-px-4 tw-py-2 tw-bg-indigo-600 tw-text-base tw-font-medium tw-text-white hover:tw-bg-indigo-700 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-offset-2 focus:tw-ring-indigo-500 sm:tw-ml-3 sm:tw-w-auto sm:tw-text-sm">
-                                {{ $isEditing ? 'Update' : 'Create' }}
-                            </button>
-                            <button wire:click="closeModal" type="button"
-                                    class="tw-mt-3 tw-w-full tw-inline-flex tw-justify-center tw-rounded-md tw-border tw-border-gray-300 tw-shadow-sm tw-px-4 tw-py-2 tw-bg-white tw-text-base tw-font-medium tw-text-gray-700 hover:tw-bg-gray-50 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-offset-2 focus:tw-ring-indigo-500 sm:tw-mt-0 sm:tw-ml-3 sm:tw-w-auto sm:tw-text-sm">
-                                Cancel
-                            </button>
-                        </div>
                     </div>
-                    {{-- Footer Buttons --}}
-                    
+
+                    {{-- Footer --}}
+                    <div class="tw-px-6 tw-py-4 tw-border-t tw-border-gray-200 tw-bg-gray-50/50 tw-flex tw-justify-end tw-gap-3 tw-rounded-b-xl">
+                        <button wire:click="closeModal" type="button"
+                                class="tw-px-4 tw-py-2 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors tw-shadow-sm">
+                            Cancel
+                        </button>
+                        <button wire:click="saveTask" type="button"
+                                class="tw-px-4 tw-py-2 tw-rounded-lg tw-text-sm tw-font-medium tw-text-white tw-shadow-sm tw-transition-colors tw-border tw-border-transparent"
+                                style="background-color: #174D9D;"
+                                onmouseover="this.style.backgroundColor='#123f82'" onmouseout="this.style.backgroundColor='#174D9D'">
+                            {{ $isEditing ? 'Update Task' : 'Create Task' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     @endif
 
-    {{-- Import Modal --}}
-    <div x-data="{ open: false }" 
+    {{-- ═══════════════════════════════════════════════════════════════
+         IMPORT MODAL
+    ═══════════════════════════════════════════════════════════════ --}}
+    <div x-data="{ open: false }"
          x-on:open-import-modal.window="open = true"
-         style="display: none;" 
-         x-show="open" 
+         style="display: none;"
+         x-show="open"
          class="tw-fixed tw-inset-0 tw-z-50 tw-overflow-y-auto">
-        
-        <div class="tw-flex tw-items-end tw-justify-center tw-min-h-screen tw-pt-4 tw-px-4 tw-pb-20 tw-text-center sm:tw-block sm:tw-p-0">
-            <div x-show="open" x-transition:enter="tw-ease-out tw-duration-300" x-transition:enter-start="tw-opacity-0" x-transition:enter-end="tw-opacity-100" x-transition:leave="tw-ease-in tw-duration-200" x-transition:leave-start="tw-opacity-100" x-transition:leave-end="tw-opacity-0" class="tw-fixed tw-inset-0 tw-bg-gray-500 tw-bg-opacity-75 tw-transition-opacity" @click="open = false"></div>
 
-            <div x-show="open" x-transition:enter="tw-ease-out tw-duration-300" x-transition:enter-start="tw-opacity-0 tw-translate-y-4 sm:tw-translate-y-0 sm:tw-scale-95" x-transition:enter-end="tw-opacity-100 tw-translate-y-0 sm:tw-scale-100" x-transition:leave="tw-ease-in tw-duration-200" x-transition:leave-start="tw-opacity-100 tw-translate-y-0 sm:tw-scale-100" x-transition:leave-end="tw-opacity-0 tw-translate-y-4 sm:tw-translate-y-0 sm:tw-scale-95" class="tw-inline-block tw-align-bottom tw-bg-white tw-rounded-lg tw-px-4 tw-pt-5 tw-pb-4 tw-text-left tw-overflow-hidden tw-shadow-xl tw-transform tw-transition-all sm:tw-my-8 sm:tw-align-middle sm:tw-max-w-lg sm:tw-w-full sm:tw-p-6">
-                
-                <div>
-                    <div class="tw-mx-auto tw-flex tw-items-center tw-justify-center tw-h-12 tw-w-12 tw-rounded-full tw-bg-green-100">
-                        <svg class="tw-h-6 tw-w-6 tw-text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        <div class="tw-flex tw-items-center tw-justify-center tw-min-h-screen tw-px-4 tw-py-6">
+
+            {{-- Backdrop --}}
+            <div x-show="open" x-transition:enter="tw-ease-out tw-duration-300" x-transition:enter-start="tw-opacity-0" x-transition:enter-end="tw-opacity-100"
+                 x-transition:leave="tw-ease-in tw-duration-200" x-transition:leave-start="tw-opacity-100" x-transition:leave-end="tw-opacity-0"
+                 class="tw-fixed tw-inset-0 tw-bg-gray-900/60 tw-backdrop-blur-sm tw-transition-opacity" @click="open = false"></div>
+
+            {{-- Modal Panel --}}
+            <div x-show="open" x-transition:enter="tw-ease-out tw-duration-300" x-transition:enter-start="tw-opacity-0 tw-scale-95" x-transition:enter-end="tw-opacity-100 tw-scale-100"
+                 x-transition:leave="tw-ease-in tw-duration-200" x-transition:leave-start="tw-opacity-100 tw-scale-100" x-transition:leave-end="tw-opacity-0 tw-scale-95"
+                 class="tw-relative tw-bg-white tw-rounded-xl tw-shadow-2xl tw-w-full tw-max-w-lg tw-transform tw-transition-all">
+
+                {{-- Header --}}
+                <div class="tw-px-6 tw-py-4 tw-border-b tw-border-gray-200">
+                    <div class="tw-flex tw-items-center tw-space-x-3">
+                        <div class="tw-flex tw-items-center tw-justify-center tw-h-10 tw-w-10 tw-rounded-full tw-bg-green-100">
+                            <svg class="tw-h-5 tw-w-5 tw-text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="tw-text-lg tw-font-semibold tw-text-gray-900">Import WBS Implementation</h3>
+                            <p class="tw-text-sm tw-text-gray-500">Upload your Excel file to bulk create or update tasks.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Body --}}
+                <div class="tw-px-6 tw-py-5">
+                    <div class="tw-border-2 tw-border-dashed tw-border-gray-300 tw-rounded-lg tw-p-8 tw-flex tw-flex-col tw-items-center tw-justify-center hover:tw-border-[#174D9D] tw-transition-colors tw-bg-gray-50/50">
+                        <svg class="tw-w-10 tw-h-10 tw-text-gray-400 tw-mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                         </svg>
-                    </div>
-                    <div class="tw-mt-3 tw-text-center sm:tw-mt-5">
-                        <h3 class="tw-text-lg tw-leading-6 tw-font-medium tw-text-gray-900" id="modal-title">
-                            Import WBS Implementation
-                        </h3>
-                        <div class="tw-mt-2">
-                            <p class="tw-text-sm tw-text-gray-500">
-                                Upload your Excel file to bulk create or update tasks.
-                            </p>
+                        <input type="file" wire:model="inputTemplate" class="tw-block tw-w-full tw-text-sm tw-text-gray-500
+                            file:tw-mr-4 file:tw-py-2 file:tw-px-4
+                            file:tw-rounded-lg file:tw-border-0
+                            file:tw-text-sm file:tw-font-medium
+                            file:tw-bg-blue-50 file:tw-text-[#174D9D]
+                            hover:file:tw-bg-blue-100 tw-transition-colors
+                        "/>
+                        <div wire:loading wire:target="inputTemplate" class="tw-mt-3 tw-text-sm tw-text-gray-500 tw-italic tw-flex tw-items-center">
+                            <svg class="tw-animate-spin tw-w-4 tw-h-4 tw-mr-2" fill="none" viewBox="0 0 24 24">
+                                <circle class="tw-opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="tw-opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Uploading...
                         </div>
                     </div>
+                    <x-input-error :messages="$errors->get('inputTemplate')" class="tw-mt-2" />
                 </div>
 
-                <div class="tw-mt-5 sm:tw-mt-6">
-                    <div class="tw-space-y-4">
-                        <div class="tw-border-2 tw-border-dashed tw-border-gray-300 tw-rounded-md tw-p-6 tw-flex tw-flex-col tw-items-center tw-justify-center hover:tw-border-indigo-500 tw-transition-colors">
-                            <input type="file" wire:model="inputTemplate" class="tw-block tw-w-full tw-text-sm tw-text-slate-500
-                                file:tw-mr-4 file:tw-py-2 file:tw-px-4
-                                file:tw-rounded-full file:tw-border-0
-                                file:tw-text-sm file:tw-font-semibold
-                                file:tw-bg-indigo-50 file:tw-text-indigo-700
-                                hover:file:tw-bg-indigo-100
-                            "/>
-                            <div wire:loading wire:target="inputTemplate" class="tw-mt-2 tw-text-sm tw-text-gray-500 tw-italic">
-                                Uploading...
-                            </div>
-                        </div>
-
-                        <div class="tw-flex tw-justify-end tw-pt-4">
-                            <button @click="open = false" type="button" class="tw-mr-3 tw-bg-white tw-py-2 tw-px-4 tw-border tw-border-gray-300 tw-rounded-md tw-shadow-sm tw-text-sm tw-font-medium tw-text-gray-700 hover:tw-bg-gray-50 focus:tw-outline-none">
-                                Cancel
-                            </button>
-                            <button wire:click="importExcel" wire:loading.attr="disabled" type="button" class="tw-inline-flex tw-justify-center tw-py-2 tw-px-4 tw-border tw-border-transparent tw-shadow-sm tw-text-sm tw-font-medium tw-rounded-md tw-text-white tw-bg-indigo-600 hover:tw-bg-indigo-700 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-offset-2 focus:tw-ring-indigo-500 disabled:tw-opacity-50 disabled:tw-cursor-not-allowed">
-                                <span wire:loading.remove wire:target="importExcel">Import</span>
-                                <span wire:loading wire:target="importExcel">Processing...</span>
-                            </button>
-                        </div>
-                         <x-input-error :messages="$errors->get('inputTemplate')" class="tw-mt-1" />
-                    </div>
+                {{-- Footer --}}
+                <div class="tw-px-6 tw-py-4 tw-border-t tw-border-gray-200 tw-bg-gray-50/50 tw-flex tw-justify-end tw-gap-3 tw-rounded-b-xl">
+                    <button @click="open = false" type="button"
+                            class="tw-px-4 tw-py-2 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors tw-shadow-sm">
+                        Cancel
+                    </button>
+                    <button wire:click="importExcel" wire:loading.attr="disabled" type="button"
+                            class="tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-rounded-lg tw-text-sm tw-font-medium tw-text-white tw-shadow-sm tw-transition-colors disabled:tw-opacity-50 disabled:tw-cursor-not-allowed tw-border tw-border-transparent"
+                            style="background-color: #174D9D;"
+                            onmouseover="this.style.backgroundColor='#123f82'" onmouseout="this.style.backgroundColor='#174D9D'">
+                        <span wire:loading.remove wire:target="importExcel">Import</span>
+                        <span wire:loading wire:target="importExcel" class="tw-flex tw-items-center">
+                            <svg class="tw-animate-spin tw-w-4 tw-h-4 tw-mr-2" fill="none" viewBox="0 0 24 24">
+                                <circle class="tw-opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="tw-opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Processing...
+                        </span>
+                    </button>
                 </div>
-
             </div>
         </div>
     </div>
