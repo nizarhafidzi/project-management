@@ -15,6 +15,8 @@ class ApprovalManager extends Component
      */
     public function approve(int $logId): void
     {
+        abort_if(auth()->user()->hasRole('Employee'), 403);
+
         $log = DailyLog::findOrFail($logId);
 
         $log->update([
@@ -39,6 +41,8 @@ class ApprovalManager extends Component
      */
     public function reject(int $logId): void
     {
+        abort_if(auth()->user()->hasRole('Employee'), 403);
+
         $this->validate([
             'rejectionReason' => 'required|string|min:3|max:500',
         ]);

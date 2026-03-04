@@ -55,27 +55,11 @@ class TaskWorkspace extends Component
     #[Computed]
     public function totalManHours()
     {
-        $seconds = $this->logs()->reduce(function ($carry, $log) {
-            if ($log->clock_in && $log->clock_out) {
-                try {
-                    $dateStr = Carbon::parse($log->log_date)->format('Y-m-d');
-                    
-                    // Ensure clock_in/out are treated as time strings
-                    $clockInStr = Carbon::parse($log->clock_in)->format('H:i:s');
-                    $clockOutStr = Carbon::parse($log->clock_out)->format('H:i:s');
-                    
-                    $start = Carbon::parse($dateStr . ' ' . $clockInStr);
-                    $end = Carbon::parse($dateStr . ' ' . $clockOutStr);
-                    
-                    return $carry + $end->diffInSeconds($start);
-                } catch (\Exception $e) {
-                    return $carry;
-                }
-            }
-            return $carry;
+        $hours = $this->logs()->reduce(function ($carry, $log) {
+            return $carry + $log->man_hours; // Uses safe accessor with cross-midnight handling
         }, 0);
 
-        return round($seconds / 3600, 2);
+        return round($hours, 2);
     }
 
     #[Computed]

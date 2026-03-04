@@ -66,14 +66,9 @@ class ExecutiveDashboard extends Component
             })
             ->whereNotNull('clock_in')
             ->whereNotNull('clock_out')
-            ->get() // We need to fetch to calculate time diff in PHP or use raw SQL. 
-            // Using raw SQL for duration sum is better but requires timediff logic.
-            // Let's use get() and helper for now as dataset might not be huge yet, or optimize with raw DB.
-            // Optimization: select sum(time_to_sec(timediff(clock_out, clock_in))) / 3600
+            ->get()
             ->reduce(function ($carry, $log) {
-                $start = Carbon::parse($log->clock_in);
-                $end = Carbon::parse($log->clock_out);
-                return $carry + $end->diffInHours($start);
+                return $carry + $log->man_hours; // Uses safe accessor with cross-midnight handling
             }, 0);
 
         $this->totalManHours = round($this->totalManHours, 2);
@@ -151,7 +146,7 @@ class ExecutiveDashboard extends Component
             $daySum = $logs->filter(function($log) use ($date) {
                 return $log->log_date && $log->log_date->toDateString() === $date;
             })->reduce(function ($carry, $log) {
-                 return $carry + Carbon::parse($log->clock_out)->diffInHours(Carbon::parse($log->clock_in));
+                return $carry + $log->man_hours; // Uses safe accessor with cross-midnight handling
             }, 0);
             
             $trend['labels'][] = Carbon::parse($date)->format('D, M j');

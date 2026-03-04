@@ -39,12 +39,14 @@ class ProjectList extends Component
 
     public function confirmDelete(int $projectId): void
     {
+        abort_if(auth()->user()->hasRole('Employee'), 403);
         $this->deletingProjectId = $projectId;
         $this->showDeleteModal = true;
     }
 
     public function deleteProject(): void
     {
+        abort_if(auth()->user()->hasRole('Employee'), 403);
         if ($this->deletingProjectId) {
             Project::findOrFail($this->deletingProjectId)->delete();
             session()->flash('message', 'Project deleted successfully.');

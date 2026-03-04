@@ -22,6 +22,7 @@ class ProjectShow extends Component
 
     public function openAssignModal(): void
     {
+        abort_if(auth()->user()->hasRole('Employee'), 403);
         $this->showAssignModal = true;
         $this->searchUser = '';
         $this->selectedUserId = '';
@@ -35,6 +36,7 @@ class ProjectShow extends Component
 
     public function assignMember(): void
     {
+        abort_if(auth()->user()->hasRole('Employee'), 403);
         $this->validate([
             'selectedUserId' => 'required|exists:users,id',
             'selectedRole' => 'required|in:Manager,Team Leader,Member',
@@ -57,6 +59,7 @@ class ProjectShow extends Component
 
     public function removeMember(int $userId): void
     {
+        abort_if(auth()->user()->hasRole('Employee'), 403);
         $this->project->users()->detach($userId);
         $this->project->load('users');
         session()->flash('message', 'Member removed successfully.');

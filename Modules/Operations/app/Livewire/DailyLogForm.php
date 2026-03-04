@@ -11,17 +11,32 @@ use Illuminate\Support\Facades\Auth;
 
 class DailyLogForm extends Component
 {
+    // ──────────────────────────────────────────────
+    // Public Properties
+    // ──────────────────────────────────────────────
+
     public string $todayDate = '';
     public string $currentTime = '';
 
+    // Form Fields
     public $taskId = '';
     public $clockIn = '';
     public $clockOut = '';
     public $progressIncrement = 0;
+    public $notes = '';
+    
+    // Backdate State
     public bool $isBackdateMode = false;
     public string $backdateDate = '';
 
-    public $myTasks = [];
+    // Stateful Clock-In tracking
+    public $activeLogId = null;
+    public $activeClockInTime = null;
+    public $activeTaskName = null;
+
+    public $myTasks = [];    // ──────────────────────────────────────────────
+    // Validation Rules
+    // ──────────────────────────────────────────────
 
     protected function rules(): array
     {
@@ -34,10 +49,15 @@ class DailyLogForm extends Component
             $rules['backdateDate'] = 'required|date|before:today';
             $rules['clockIn'] = 'required';
             $rules['clockOut'] = 'required';
+            $rules['notes'] = 'required|string|min:3';
         }
 
         return $rules;
     }
+
+    // ──────────────────────────────────────────────
+    // Lifecycle: mount()
+    // ──────────────────────────────────────────────
 
     public function mount(): void
     {
@@ -46,127 +66,197 @@ class DailyLogForm extends Component
         $this->backdateDate = Carbon::yesterday('Asia/Jakarta')->format('Y-m-d');
 
         $this->loadMyTasks();
+
+        // STATE EVALUATION: Check for an active (unclosed) log for today
+        $activeLog = DailyLog::where('user_id', Auth::id())
+            ->where('log_date', $this->todayDate)
+            ->whereNull('clock_out')
+            ->first();
+
+        if ($activeLog) {
+            $this->activeLogId = $activeLog->id;
+            $this->taskId = $activeLog->task_id;
+            $this->activeClockInTime = Carbon::parse($activeLog->clock_in)->format('H:i');
+            $this->activeTaskName = $activeLog->task ? $activeLog->task->name : 'Unknown Task';
+        }
     }
+
+    // ──────────────────────────────────────────────
+    // Load Tasks
+    // ──────────────────────────────────────────────
 
     public function loadMyTasks(): void
     {
         $user = Auth::user();
 
+        // Only show actionable tasks assigned to this user
         $this->myTasks = Task::with('project')
-            ->whereHas('project', function ($query) use ($user) {
-                $query->whereHas('users', function ($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                });
-            })
-            // Strict filtering: User can ONLY see tasks assigned to them
             ->where('user_id', $user->id)
+            ->whereDoesntHave('children')
             ->take(50)
             ->get();
     }
 
-    /**
-     * Clock In — Creates a new daily log entry for today with the current system time.
-     */
-    public function clockIn(): void
-    {
-        $this->validate([
-            'taskId' => 'required|exists:tasks,id',
-        ]);
-
-        // Security Hardening: Ensure task is assigned to current user
-        abort_if(! $this->validateTaskOwnership($this->taskId), 403, 'Unauthorized action.');
-
-        $now = Carbon::now('Asia/Jakarta');
-
-        DailyLog::create([
-            'user_id' => Auth::id(),
-            'task_id' => $this->taskId,
-            'log_date' => $now->toDateString(),
-            'clock_in' => $now->toTimeString(),
-            'is_backdate' => false,
-            'approval_status' => 'approved',
-        ]);
-
-        session()->flash('message', 'Clocked In Successfully at ' . $now->format('H:i'));
-    }
+    // ──────────────────────────────────────────────
+    // STATE 1 → Clock In (Morning)
+    // ──────────────────────────────────────────────
 
     /**
-     * Clock Out — Records the end time on an existing log.
+     * Start Clock In — Creates a new daily log entry for today.
+     * Rewritten to bypass Livewire's complex validation engine which is causing silent failures.
      */
-    public function clockOut(int $logId): void
+    public function startClockIn(): void
     {
-        $log = DailyLog::where('user_id', Auth::id())->find($logId);
+        if (empty($this->taskId)) {
+            session()->flash('error', 'Please select a task from the dropdown first.');
+            return;
+        }
 
-        if ($log) {
+        abort_if(! $this->validateTaskOwnership($this->taskId), 403, 'Unauthorized action. You are not assigned to this task.');
+
+        if ($this->activeLogId) {
+            session()->flash('error', 'You already have an active clock-in session.');
+            return;
+        }
+
+        try {
             $now = Carbon::now('Asia/Jakarta');
-            $log->update([
-                'clock_out' => $now->toTimeString(),
+
+            $log = DailyLog::create([
+                'user_id'            => Auth::id(),
+                'task_id'            => $this->taskId,
+                'log_date'           => $now->toDateString(),
+                'clock_in'           => $now->toTimeString(),
+                'clock_out'          => null, // Not yet clocked out
+                'progress_increment' => 0,
+                'notes'              => null,
+                'is_backdate'        => false,
+                'approval_status'    => 'draft', // Not yet completed
             ]);
-            session()->flash('message', 'Clocked Out Successfully at ' . $now->format('H:i'));
+
+            // Transition UI to STATE 2
+            $this->activeLogId = $log->id;
+            $this->activeClockInTime = $now->format('H:i');
+            
+            $taskName = Task::find($this->taskId)->name ?? 'Unknown Task';
+            $this->activeTaskName = $taskName;
+
+            session()->flash('message', 'Clocked In Successfully at ' . $now->format('H:i') . ' WIB.');
+            
+        } catch (\Exception $e) {
+            session()->flash('error', 'System Error: ' . $e->getMessage());
         }
     }
 
+    // ──────────────────────────────────────────────
+    // STATE 2 → Clock Out (Afternoon/Evening)
+    // ──────────────────────────────────────────────
+
     /**
-     * Save Progress — Records progress increment and updates the linked task.
+     * Clock Out — Records the end time, user progress, notes, and auto-approves.
      */
-    public function saveProgress(int $logId): void
+    public function startClockOut(): void
     {
-        $this->validate([
-            'progressIncrement' => 'required|numeric|min:0|max:100',
-        ]);
+        // Force typecast because Livewire might pass empty inputs as empty strings
+        if ($this->progressIncrement === '' || $this->progressIncrement === null) {
+            $this->progressIncrement = 0;
+        }
 
-        $log = DailyLog::where('user_id', Auth::id())->find($logId);
+        if (!is_numeric($this->progressIncrement) || $this->progressIncrement < 0 || $this->progressIncrement > 100) {
+            session()->flash('error', 'Progress must be a number between 0 and 100.');
+            return;
+        }
 
-        if ($log && $log->isApproved()) {
-            $log->update([
-                'progress_increment' => $this->progressIncrement,
-            ]);
+        if (empty(trim($this->notes)) || strlen(trim($this->notes)) < 3) {
+            session()->flash('error', 'Notes / Description must be at least 3 characters long.');
+            return;
+        }
 
-            // Update the task's cumulative progress
-            $task = $log->task;
-            if ($task) {
-                $task->total_progress = min(100, $task->total_progress + $this->progressIncrement);
-                $task->save();
-                $task->recalculateProgress();
+        try {
+            $log = DailyLog::where('user_id', Auth::id())->find($this->activeLogId);
+
+            if (!$log) {
+                session()->flash('error', 'Active log not found.');
+                $this->resetFormState();
+                return;
             }
 
-            $this->progressIncrement = 0;
-            session()->flash('message', 'Progress Saved Successfully.');
+            $now = Carbon::now('Asia/Jakarta');
+
+            // Update the log with clock out time and auto-approve
+            $log->update([
+                'clock_out'          => $now->toTimeString(),
+                'progress_increment' => $this->progressIncrement,
+                'notes'              => $this->notes,
+                'approval_status'    => 'approved', // Real-time today is auto-approved
+            ]);
+
+            // Update total progress in the Tasks table
+            if ($log->task) {
+                $log->task->total_progress = min(100, $log->task->total_progress + $this->progressIncrement);
+                $log->task->save();
+                if (method_exists($log->task, 'recalculateProgress')) {
+                    $log->task->recalculateProgress();
+                }
+            }
+
+            session()->flash('message', 'Clocked Out Successfully. Progress saved.');
+
+            // Return to STATE 1
+            $this->resetFormState();
+            
+        } catch (\Exception $e) {
+            session()->flash('error', 'System Error: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Submit Backdate — Creates a backdate request that requires Manager approval.
-     * The model's boot() method auto-sets is_backdate=true and approval_status=pending.
-     */
+    private function resetFormState(): void
+    {
+        $this->reset(['activeLogId', 'activeClockInTime', 'activeTaskName', 'taskId', 'progressIncrement', 'notes']);
+        $this->resetValidation();
+    }
+
+    // ──────────────────────────────────────────────
+    // BACKDATE MODE (Correct exactly as requested)
+    // ──────────────────────────────────────────────
+
     public function submitBackdate(): void
     {
         $this->validate([
-            'taskId' => 'required|exists:tasks,id',
-            'backdateDate' => 'required|date|before:today',
-            'clockIn' => 'required',
-            'clockOut' => 'required',
+            'taskId'            => 'required|exists:tasks,id',
+            'backdateDate'      => 'required|date|before:today',
+            'clockIn'           => 'required',
+            'clockOut'          => ['required', function ($attribute, $value, $fail) {
+                if (!empty($this->clockIn) && strtotime($value) <= strtotime($this->clockIn)) {
+                    $fail('Clock Out time must be after Clock In time.');
+                }
+            }],
             'progressIncrement' => 'required|numeric|min:0|max:100',
+            'notes'             => 'required|string|min:3',
         ]);
 
-
-        // Security Hardening: Ensure task is assigned to current user
         abort_if(! $this->validateTaskOwnership($this->taskId), 403, 'Unauthorized action.');
 
         DailyLog::create([
-            'user_id' => Auth::id(),
-            'task_id' => $this->taskId,
-            'log_date' => $this->backdateDate,
-            'clock_in' => $this->clockIn,
-            'clock_out' => $this->clockOut,
+            'user_id'            => Auth::id(),
+            'task_id'            => $this->taskId,
+            'log_date'           => $this->backdateDate,
+            'clock_in'           => $this->clockIn,
+            'clock_out'          => $this->clockOut,
             'progress_increment' => $this->progressIncrement,
-            'is_backdate' => true,
-            'approval_status' => 'pending',
+            'notes'              => $this->notes,
+            'is_backdate'        => true,
+            'approval_status'    => 'pending',
         ]);
 
         session()->flash('message', 'Backdate Request Submitted for Manager Approval.');
-        $this->reset(['taskId', 'clockIn', 'clockOut', 'progressIncrement']);
+        $this->reset(['taskId', 'clockIn', 'clockOut', 'progressIncrement', 'notes']);
+        $this->resetValidation();
     }
+
+    // ──────────────────────────────────────────────
+    // Render
+    // ──────────────────────────────────────────────
 
     #[Layout('layouts.app')]
     public function render()
@@ -186,14 +276,15 @@ class DailyLogForm extends Component
             ->get();
 
         return view('operations::livewire.daily-log-form', [
-            'todaysLogs' => $todaysLogs,
+            'todaysLogs'        => $todaysLogs,
             'myBackdateRequests' => $myBackdateRequests,
         ]);
     }
 
     private function validateTaskOwnership($taskId): bool
     {
-        $task = Task::find($taskId);
-        return $task && $task->user_id === Auth::id();
+        $task = Task::where('user_id', (int) Auth::id())->find($taskId);
+        return $task !== null;
     }
 }
+

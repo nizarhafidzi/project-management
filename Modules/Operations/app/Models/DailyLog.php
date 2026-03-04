@@ -94,6 +94,40 @@ class DailyLog extends Model
         return $query->where('user_id', auth()->id());
     }
 
+    public function scopeDraft($query)
+    {
+        return $query->where('approval_status', 'draft');
+    }
+
+    // ──────────────────────────────────────────────
+    // Accessors
+    // ──────────────────────────────────────────────
+
+    /**
+     * Calculate Man-Hours safely with cross-midnight handling.
+     * Returns hours as a float, always >= 0.
+     */
+    public function getManHoursAttribute(): float
+    {
+        if (!$this->clock_in || !$this->clock_out) {
+            return 0.0;
+        }
+
+        $dateStr = $this->log_date
+            ? Carbon::parse($this->log_date)->format('Y-m-d')
+            : Carbon::today('Asia/Jakarta')->format('Y-m-d');
+
+        $in = Carbon::parse($dateStr . ' ' . Carbon::parse($this->clock_in)->format('H:i:s'));
+        $out = Carbon::parse($dateStr . ' ' . Carbon::parse($this->clock_out)->format('H:i:s'));
+
+        // Cross-midnight handling: if clock_out is before clock_in, assume next day
+        if ($out->lessThan($in)) {
+            $out->addDay();
+        }
+
+        return max(0, $in->diffInMinutes($out) / 60);
+    }
+
     // ──────────────────────────────────────────────
     // Helpers
     // ──────────────────────────────────────────────

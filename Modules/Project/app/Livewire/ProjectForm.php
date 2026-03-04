@@ -133,6 +133,8 @@ class ProjectForm extends Component
 
     public function save(\App\Services\AutodeskService $apsService): void
     {
+        abort_if(auth()->user()->hasRole('Employee'), 403);
+
         \Illuminate\Support\Facades\Log::info('ProjectForm::save called', ['user_id' => \Illuminate\Support\Facades\Auth::id(), 'integrate' => $this->integrateWithAcc]);
         
         $this->validate();

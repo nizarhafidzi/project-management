@@ -43,6 +43,7 @@
                 </svg>
                 {{ __('WBS Planning') }}
             </a>
+            @hasanyrole('Superadmin|Manager|Team Leader')
             <a href="{{ route('project.edit', $project) }}" wire:navigate
                class="tw-inline-flex tw-items-center tw-px-4 tw-py-2.5 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-shadow-sm tw-transition-colors">
                 <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,6 +51,7 @@
                 </svg>
                 {{ __('Edit') }}
             </a>
+            @endhasanyrole
         </div>
     </div>
 
@@ -190,6 +192,7 @@
                                 {{ $project->users->count() }}
                             </span>
                         </div>
+                        @hasanyrole('Superadmin|Manager|Team Leader')
                         <button wire:click="openAssignModal"
                                 class="tw-inline-flex tw-items-center tw-rounded-lg tw-p-2 tw-text-white tw-shadow-sm tw-transition-all tw-duration-200 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-blue-300"
                                 style="background-color: #174D9D;"
@@ -200,6 +203,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                             </svg>
                         </button>
+                        @endhasanyrole
                     </div>
                 </div>
                 <div class="tw-p-4">
@@ -229,6 +233,7 @@
                                         <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded-full tw-text-[0.65rem] tw-leading-tight tw-font-semibold tw-ring-1 tw-ring-inset {{ $roleColor }}">
                                             {{ $user->pivot->role_in_project }}
                                         </span>
+                                        @hasanyrole('Superadmin|Manager|Team Leader')
                                         <button wire:click="removeMember({{ $user->id }})"
                                                 wire:confirm="Are you sure you want to remove this member?"
                                                 class="tw-opacity-0 group-hover:tw-opacity-100 tw-p-1 tw-rounded tw-text-gray-400 hover:tw-text-red-600 hover:tw-bg-red-50 tw-transition-all tw-duration-200"
@@ -237,6 +242,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                                             </svg>
                                         </button>
+                                        @endhasanyrole
                                     </div>
                                 </div>
                             @endforeach
@@ -250,6 +256,7 @@
                             </div>
                             <h3 class="tw-text-sm tw-font-semibold tw-text-gray-900">No members assigned</h3>
                             <p class="tw-mt-1 tw-text-xs tw-text-gray-500">Assign team members to this project.</p>
+                            @hasanyrole('Superadmin|Manager|Team Leader')
                             <button wire:click="openAssignModal"
                                     class="tw-mt-3 tw-inline-flex tw-items-center tw-rounded-lg tw-px-3 tw-py-1.5 tw-text-xs tw-font-medium tw-text-white tw-shadow-sm tw-transition-all"
                                     style="background-color: #174D9D;">
@@ -258,6 +265,7 @@
                                 </svg>
                                 Add Member
                             </button>
+                            @endhasanyrole
                         </div>
                     @endif
                 </div>

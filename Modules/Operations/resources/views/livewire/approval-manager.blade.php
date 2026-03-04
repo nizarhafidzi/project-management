@@ -86,6 +86,7 @@
                             </td>
                             {{-- Actions --}}
                             <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap">
+                                @hasanyrole('Superadmin|Manager')
                                 <div class="tw-flex tw-flex-col tw-gap-2">
                                     <div class="tw-flex tw-items-center tw-gap-1">
                                         {{-- Approve Button --}}
@@ -108,6 +109,9 @@
                                            class="tw-w-full tw-rounded-md tw-border-gray-300 tw-shadow-sm tw-px-2 tw-py-1 tw-text-xs focus:tw-ring-[#174D9D] focus:tw-border-[#174D9D]">
                                     @error('rejectionReason') <span class="tw-text-red-500 tw-text-xs">{{ $message }}</span> @enderror
                                 </div>
+                                @else
+                                <span class="tw-text-gray-400 tw-text-sm">—</span>
+                                @endhasanyrole
                             </td>
                         </tr>
                     @empty

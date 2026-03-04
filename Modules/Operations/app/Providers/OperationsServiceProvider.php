@@ -28,9 +28,14 @@ class OperationsServiceProvider extends ServiceProvider
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
 
-        // Fix for Bug 2: Register Livewire components manually to handle alias mismatch
+        // nwidart/laravel-modules: Livewire components inside modules must be registered manually
+        // because Livewire derives the component name from the FQCN using dot-notation, and without
+        // this registration it cannot find the component on wire:click (subsequent requests).
         \Livewire\Livewire::component('modules.operations.livewire.daily-log-form', \Modules\Operations\Livewire\DailyLogForm::class);
-        \Livewire\Livewire::component('operations::daily-log-form', \Modules\Operations\Livewire\DailyLogForm::class);
+        // Bug 7 fix: ApprovalManager was MISSING its alias — added here:
+        \Livewire\Livewire::component('modules.operations.livewire.approval-manager', \Modules\Operations\Livewire\ApprovalManager::class);
+        \Livewire\Livewire::component('modules.operations.livewire.bim-viewer', \Modules\Operations\Livewire\BimViewer::class);
+
 
         // Register DailyLog Observer
         \Modules\Operations\Models\DailyLog::observe(\Modules\Operations\Observers\DailyLogObserver::class);
