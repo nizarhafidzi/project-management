@@ -35,6 +35,7 @@ class OperationsServiceProvider extends ServiceProvider
         // Bug 7 fix: ApprovalManager was MISSING its alias — added here:
         \Livewire\Livewire::component('modules.operations.livewire.approval-manager', \Modules\Operations\Livewire\ApprovalManager::class);
         \Livewire\Livewire::component('modules.operations.livewire.bim-viewer', \Modules\Operations\Livewire\BimViewer::class);
+        \Livewire\Livewire::component('modules.operations.livewire.daily-log-history', \Modules\Operations\Livewire\DailyLogHistory::class);
 
 
         // Register DailyLog Observer

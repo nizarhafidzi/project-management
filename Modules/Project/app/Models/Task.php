@@ -4,6 +4,7 @@ namespace Modules\Project\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Operations\Models\DailyLog;
 
@@ -25,7 +26,6 @@ class Task extends Model
         'end_date',
         'total_progress',
         'sort_order',
-        'user_id',
     ];
 
     protected function casts(): array
@@ -75,9 +75,9 @@ class Task extends Model
         return $this->hasMany(DailyLog::class);
     }
 
-    public function user(): BelongsTo
+    public function users(): BelongsToMany
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->belongsToMany(\App\Models\User::class)->withTimestamps();
     }
 
     /**
@@ -85,7 +85,7 @@ class Task extends Model
      */
     public function scopeAssignedTo($query, $userId)
     {
-        return $query->where('user_id', $userId);
+        return $query->whereHas('users', fn($q) => $q->where('users.id', $userId));
     }
 
     // ──────────────────────────────────────────────

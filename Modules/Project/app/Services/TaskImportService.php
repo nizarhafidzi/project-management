@@ -34,10 +34,10 @@ class TaskImportService
     public function downloadTemplate()
     {
         $data = [
-            ['WBS Code', 'Task Name', 'Weight (%)', 'Start Date (YYYY-MM-DD)', 'End Date (YYYY-MM-DD)', 'Assignee Email'],
+            ['WBS Code', 'Task Name', 'Weight (%)', 'Start Date (YYYY-MM-DD)', 'End Date (YYYY-MM-DD)', 'Assignees (comma-separated emails, e.g: andi@ptbek.co.id, budi@ptbek.co.id)'],
             ['1', 'Analysis Phase', '20', '2026-01-01', '2026-01-15', 'manager@example.com'],
-            ['1.1', 'Requirements Gathering', '50', '2026-01-01', '2026-01-07', 'staff@example.com'],
-            ['1.2', 'Documentation', '50', '2026-01-08', '2026-01-15', 'staff@example.com'],
+            ['1.1', 'Requirements Gathering', '50', '2026-01-01', '2026-01-07', 'staff1@example.com, staff2@example.com'],
+            ['1.2', 'Documentation', '50', '2026-01-08', '2026-01-15', 'staff1@example.com'],
         ];
 
         return Excel::download(new class($data) implements \Maatwebsite\Excel\Concerns\FromArray {
@@ -110,7 +110,7 @@ class TaskImportService
         $endDate = $this->parseDate($row[$endKey] ?? null) 
             ?? $project->end_date 
             ?? now()->addDays(7)->format('Y-m-d');
-        $email = trim(strtolower($row['assignee_email'] ?? ''));
+        $email = trim(strtolower($row['assignee_email'] ?? $row['assignees_comma_separated_emails_eg_andiptbekcoid_budiptbekcoid'] ?? ''));
 
         if (empty($wbsCode)) return;
 
@@ -123,17 +123,20 @@ class TaskImportService
                 ->where('wbs_code', $parentCode)
                 ->first();
             $parentId = $parentTask->id ?? null;
-            // If parent not found, we treat as Root? Or Skip? 
-            // In WBS, if parent missing, it's orphan. Let's make it Root to be safe, or just null.
         }
 
-        // Resolve User
-        $userId = null;
+        // Resolve Users (Multiple Assignees)
+        $userIds = [];
         if (!empty($email)) {
-            if ($this->projectUsers->has($email)) {
-                $userId = $this->projectUsers->get($email)->id;
-            } else {
-                $this->missingEmailCount++;
+            $emails = array_filter(array_map('trim', explode(',', $email)));
+            $emails = array_map('strtolower', $emails);
+
+            foreach ($emails as $e) {
+                if ($this->projectUsers->has($e)) {
+                    $userIds[] = $this->projectUsers->get($e)->id;
+                } else {
+                    $this->missingEmailCount++;
+                }
             }
         }
 
@@ -145,15 +148,18 @@ class TaskImportService
         if ($task) {
             $task->update([
                 'name' => $name ?: $task->name,
-                'parent_id' => $parentId, // Update hierarchy if changed
+                'parent_id' => $parentId,
                 'weight' => $weight,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
-                'user_id' => $userId ?: $task->user_id, // Update assignee only if provided, or clear? Logic says "unassigned" if missing email.
             ]);
+            // Sync assignees via pivot
+            if (!empty($userIds)) {
+                $task->users()->sync($userIds);
+            }
             $this->updatedCount++;
         } else {
-            Task::create([
+            $task = Task::create([
                 'project_id' => $this->projectId,
                 'parent_id' => $parentId,
                 'wbs_code' => $wbsCode,
@@ -161,9 +167,11 @@ class TaskImportService
                 'weight' => $weight,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
-                'user_id' => $userId,
-                'sort_order' => 0, // Should calculate, but 0 is safe
+                'sort_order' => 0,
             ]);
+            if (!empty($userIds)) {
+                $task->users()->sync($userIds);
+            }
             $this->createdCount++;
         }
     }

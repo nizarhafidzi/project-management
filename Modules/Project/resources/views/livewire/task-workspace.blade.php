@@ -41,7 +41,11 @@
                     <h2 class="tw-text-lg tw-font-bold tw-text-gray-900 tw-leading-snug">{{ $task->name }}</h2>
                     <p class="tw-text-xs tw-text-gray-500 tw-mt-1 tw-flex tw-items-center tw-gap-1.5">
                         <svg class="tw-w-3.5 tw-h-3.5 tw-text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                        {{ $task->user->name ?? 'Unassigned' }}
+                        @if($task->users->count() > 0)
+                            {{ $task->users->pluck('name')->join(', ') }}
+                        @else
+                            Unassigned
+                        @endif
                     </p>
                 </div>
                 <span class="tw-flex-shrink-0 tw-px-2.5 tw-py-1 tw-rounded-lg tw-text-xs tw-font-bold

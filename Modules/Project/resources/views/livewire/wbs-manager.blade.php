@@ -66,7 +66,7 @@
             Collapse All
         </button>
 
-        @if ($canManage)
+        @hasanyrole('Superadmin|Manager|Team Leader')
             {{-- Secondary: Import/Export Dropdown --}}
             <div class="tw-relative" x-data="{ open: false }">
                 <button @click="open = !open" @click.away="open = false"
@@ -80,7 +80,7 @@
                     </svg>
                 </button>
                 <div x-show="open" x-cloak x-transition
-                     class="tw-absolute tw-right-0 tw-mt-2 tw-w-48 tw-bg-white tw-rounded-lg tw-shadow-lg tw-ring-1 tw-ring-black tw-ring-opacity-5 tw-z-50">
+                     class="tw-absolute tw-right-0 tw-mt-2 tw-w-52 tw-bg-white tw-rounded-lg tw-shadow-lg tw-ring-1 tw-ring-black tw-ring-opacity-5 tw-z-50">
                     <div class="tw-py-1">
                         <button wire:click="downloadTemplate"
                                 class="tw-flex tw-items-center tw-w-full tw-text-left tw-px-4 tw-py-2 tw-text-sm tw-text-gray-700 hover:tw-bg-gray-50 tw-transition-colors">
@@ -96,10 +96,19 @@
                             </svg>
                             Import Excel
                         </button>
+                        <div class="tw-border-t tw-border-gray-100 tw-my-1"></div>
+                        <button wire:click="exportWbs" @click="open = false"
+                                class="tw-flex tw-items-center tw-w-full tw-text-left tw-px-4 tw-py-2 tw-text-sm tw-text-green-700 hover:tw-bg-green-50 tw-transition-colors tw-font-medium">
+                            <svg class="tw-w-4 tw-h-4 tw-mr-2 tw-text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Export WBS (.xlsx)
+                        </button>
                     </div>
                 </div>
             </div>
-
+        @endhasanyrole
+        @if ($canManage)
             {{-- Secondary: Check BIM Updates --}}
             <button wire:click="checkForUpdates" wire:loading.attr="disabled"
                     class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors tw-shadow-sm">
@@ -323,23 +332,27 @@
                                 </div>
                             </div>
 
-                            {{-- Assigned To --}}
+                            {{-- Assigned To (Multi-Select Checkboxes) --}}
                             @if($canManage)
                             <div>
-                                <x-input-label for="formAssignedTo" :value="__('Assigned To')" />
-                                <select wire:model="formAssignedTo" id="formAssignedTo"
-                                        class="tw-mt-1 tw-block tw-w-full tw-border-gray-300 tw-rounded-lg tw-shadow-sm focus:tw-border-[#174D9D] focus:tw-ring-[#174D9D] tw-text-sm">
-                                    <option value="">-- Unassigned --</option>
-                                    @foreach($projectMembers as $member)
-                                        <option value="{{ $member->id }}">
-                                            {{ $member->name }}
+                                <x-input-label :value="__('Assign To')" />
+                                <div class="tw-mt-1 tw-max-h-48 tw-overflow-y-auto tw-border tw-border-gray-300 tw-rounded-lg tw-p-3 tw-space-y-2 tw-bg-gray-50/50">
+                                    @forelse($projectMembers as $member)
+                                        <label for="assignUser{{ $member->id }}" class="tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer tw-p-1.5 tw-rounded-md hover:tw-bg-blue-50 tw-transition-colors">
+                                            <input type="checkbox" wire:model="formAssignedUsers"
+                                                   id="assignUser{{ $member->id }}"
+                                                   value="{{ $member->id }}"
+                                                   class="tw-rounded tw-border-gray-300 tw-text-[#174D9D] tw-shadow-sm focus:tw-ring-[#174D9D]" />
+                                            <span class="tw-text-sm tw-text-gray-800 tw-font-medium">{{ $member->name }}</span>
                                             @if($member->pivot && $member->pivot->role_in_project)
-                                                ({{ $member->pivot->role_in_project }})
+                                                <span class="tw-text-xs tw-text-gray-400">({{ $member->pivot->role_in_project }})</span>
                                             @endif
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <x-input-error :messages="$errors->get('formAssignedTo')" class="tw-mt-1" />
+                                        </label>
+                                    @empty
+                                        <p class="tw-text-xs tw-text-gray-400 tw-text-center tw-py-2">No project members available.</p>
+                                    @endforelse
+                                </div>
+                                <x-input-error :messages="$errors->get('formAssignedUsers')" class="tw-mt-1" />
                             </div>
                             @endif
 

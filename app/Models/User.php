@@ -73,4 +73,21 @@ class User extends Authenticatable
     {
         return $this->hasMany(\Modules\Operations\Models\DailyLog::class);
     }
+
+    /**
+     * Tasks assigned to this user (Many-to-Many).
+     */
+    public function tasks(): BelongsToMany
+    {
+        return $this->belongsToMany(\Modules\Project\Models\Task::class)->withTimestamps();
+    }
+
+    /**
+     * Send the password reset notification.
+     * Overrides the default to use the corporate-branded email.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\CorporateResetPassword($token));
+    }
 }

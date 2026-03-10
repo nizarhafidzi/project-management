@@ -20,7 +20,7 @@ class TaskWorkspace extends Component
     public function mount(Project $project, Task $task, AutodeskService $autodeskService)
     {
         $this->project = $project;
-        $this->task = $task->load('user');
+        $this->task = $task->load('users');
 
         // Access Control: Valid Member or Manager+
         $user = auth()->user();

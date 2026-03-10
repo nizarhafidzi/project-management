@@ -63,6 +63,16 @@
             </svg>
             <span class="tw-ml-3 tw-whitespace-nowrap" x-show="isSidebarOpen" x-transition.opacity.duration.200ms>Daily Log</span>
         </a>
+        {{-- Daily Log History --}}
+        <a href="{{ route('operations.daily-log-history') }}" wire:navigate
+           class="tw-flex tw-items-center tw-py-2.5 tw-text-sm tw-font-medium tw-rounded-lg tw-transition-colors tw-duration-200 tw-group
+           {{ request()->routeIs('operations.daily-log-history') ? 'tw-bg-blue-50 tw-border-l-4 tw-border-[#174D9D] tw-text-[#174D9D] tw-pl-3' : 'tw-text-gray-600 hover:tw-bg-gray-100 hover:tw-text-gray-900 tw-px-3' }}"
+           :title="!isSidebarOpen ? 'Daily Log History' : ''">
+            <svg class="tw-w-5 tw-h-5 tw-flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="tw-ml-3 tw-whitespace-nowrap" x-show="isSidebarOpen" x-transition.opacity.duration.200ms>Daily Log History</span>
+        </a>
 
         {{-- Approvals --}}
         <a href="{{ route('operations.approvals') }}" wire:navigate
@@ -98,6 +108,15 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
             <span class="tw-ml-3 tw-whitespace-nowrap" x-show="isSidebarOpen" x-transition.opacity.duration.200ms>User Management</span>
+        </a>
+        <a href="{{ route('system.holidays') }}" wire:navigate
+           class="tw-flex tw-items-center tw-py-2.5 tw-text-sm tw-font-medium tw-rounded-lg tw-transition-colors tw-duration-200 tw-group
+           {{ request()->routeIs('system.holidays') ? 'tw-bg-blue-50 tw-border-l-4 tw-border-[#174D9D] tw-text-[#174D9D] tw-pl-3' : 'tw-text-gray-600 hover:tw-bg-gray-100 hover:tw-text-gray-900 tw-px-3' }}"
+           :title="!isSidebarOpen ? 'Holiday Manager' : ''">
+            <svg class="tw-w-5 tw-h-5 tw-flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span class="tw-ml-3 tw-whitespace-nowrap" x-show="isSidebarOpen" x-transition.opacity.duration.200ms>Holiday Manager</span>
         </a>
         @endrole
 
@@ -162,6 +181,15 @@
             <span class="tw-ml-3">Daily Log</span>
         </a>
 
+        <a href="{{ route('operations.daily-log-history') }}" wire:navigate
+           class="tw-flex tw-items-center tw-py-2.5 tw-text-sm tw-font-medium tw-rounded-lg tw-transition-colors tw-duration-200
+           {{ request()->routeIs('operations.daily-log-history') ? 'tw-bg-blue-50 tw-border-l-4 tw-border-[#174D9D] tw-text-[#174D9D] tw-pl-3' : 'tw-text-gray-600 hover:tw-bg-gray-100 hover:tw-text-gray-900 tw-px-3' }}">
+            <svg class="tw-w-5 tw-h-5 tw-flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="tw-ml-3">Daily Log History</span>
+        </a>
+
         <a href="{{ route('operations.approvals') }}" wire:navigate
            class="tw-flex tw-items-center tw-py-2.5 tw-text-sm tw-font-medium tw-rounded-lg tw-transition-colors tw-duration-200
            {{ request()->routeIs('operations.approvals') ? 'tw-bg-blue-50 tw-border-l-4 tw-border-[#174D9D] tw-text-[#174D9D] tw-pl-3' : 'tw-text-gray-600 hover:tw-bg-gray-100 hover:tw-text-gray-900 tw-px-3' }}">
@@ -191,6 +219,14 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
             <span class="tw-ml-3">User Management</span>
+        </a>
+        <a href="{{ route('system.holidays') }}" wire:navigate
+           class="tw-flex tw-items-center tw-py-2.5 tw-text-sm tw-font-medium tw-rounded-lg tw-transition-colors tw-duration-200
+           {{ request()->routeIs('system.holidays') ? 'tw-bg-blue-50 tw-border-l-4 tw-border-[#174D9D] tw-text-[#174D9D] tw-pl-3' : 'tw-text-gray-600 hover:tw-bg-gray-100 hover:tw-text-gray-900 tw-px-3' }}">
+            <svg class="tw-w-5 tw-h-5 tw-flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span class="tw-ml-3">Holiday Manager</span>
         </a>
         @endrole
 

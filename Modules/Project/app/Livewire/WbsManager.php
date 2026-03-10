@@ -27,7 +27,7 @@ class WbsManager extends Component
     public string $formEndDate = '';
     public string $formAccFileName = '';
     public string $formWbsCode = '';
-    public $formAssignedTo = '';
+    public $formAssignedUsers = [];
 
     // Data
     public $projectMembers = [];
@@ -64,7 +64,8 @@ class WbsManager extends Component
             'formAccFileName' => 'nullable|string|max:255',
             'formAccFileUrn' => 'nullable|string',
             'formAccFileVersion' => 'nullable|integer',
-            'formAssignedTo' => 'nullable|exists:users,id',
+            'formAssignedUsers' => 'nullable|array',
+            'formAssignedUsers.*' => 'exists:users,id',
         ];
     }
 
@@ -220,7 +221,7 @@ class WbsManager extends Component
         $this->formAccFileName = $task->acc_file_name ?? '';
         $this->formAccFileUrn = $task->acc_file_urn ?? '';
         $this->formAccFileVersion = $task->acc_file_version;
-        $this->formAssignedTo = $task->user_id;
+        $this->formAssignedUsers = $task->users->pluck('id')->toArray();
 
         if ($task->parent_id) {
             $parent = $task->parent;
@@ -249,7 +250,7 @@ class WbsManager extends Component
         $this->formAccFileUrn = '';
         $this->formAccFileVersion = null;
         $this->formWbsCode = '';
-        $this->formAssignedTo = '';
+        $this->formAssignedUsers = [];
         $this->formParentId = null;
         $this->editingTaskId = null;
         $this->parentLabel = '';
@@ -284,8 +285,8 @@ class WbsManager extends Component
                     'acc_file_name' => $this->formAccFileName ?: null,
                     'acc_file_urn' => $this->formAccFileUrn ?: null,
                     'acc_file_version' => $this->formAccFileVersion,
-                    'user_id' => $this->formAssignedTo ?: null,
                 ]);
+                $task->users()->sync($this->formAssignedUsers);
 
                 session()->flash('message', 'Task updated successfully.');
             } else {
@@ -293,7 +294,7 @@ class WbsManager extends Component
                     ->where('parent_id', $this->formParentId)
                     ->max('sort_order') ?? 0;
 
-                Task::create([
+                $task = Task::create([
                     'project_id' => $this->project->id,
                     'parent_id' => $this->formParentId,
                     'wbs_code' => $this->formWbsCode,
@@ -304,9 +305,9 @@ class WbsManager extends Component
                     'acc_file_name' => $this->formAccFileName ?: null,
                     'acc_file_urn' => $this->formAccFileUrn ?: null,
                     'acc_file_version' => $this->formAccFileVersion,
-                    'user_id' => $this->formAssignedTo ?: null,
                     'sort_order' => $sortOrder + 1,
                 ]);
+                $task->users()->sync($this->formAssignedUsers);
 
                 // Auto-expand parent to show new child
                 if ($this->formParentId && !in_array($this->formParentId, $this->expandedNodes)) {
@@ -472,6 +473,16 @@ class WbsManager extends Component
         return $service->downloadTemplate();
     }
 
+    public function exportWbs()
+    {
+        abort_if(!auth()->user()->hasAnyRole(['Superadmin', 'Manager', 'Team Leader']), 403);
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \Modules\Project\Exports\WbsExport($this->project->id),
+            $this->project->project_code . '_WBS.xlsx'
+        );
+    }
+
     public function importExcel()
     {
         abort_if(!$this->canManage, 403);
@@ -514,7 +525,7 @@ class WbsManager extends Component
 
         if ($user->hasRole('Employee')) {
             $rootTasks = Task::where('project_id', $this->project->id)
-                ->where('user_id', $user->id)
+                ->whereHas('users', fn($q) => $q->where('users.id', $user->id))
                 ->get();
                 
             $weightInfo = ['sum' => 0, 'expected' => 0, 'is_valid' => true];

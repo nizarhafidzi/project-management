@@ -160,6 +160,23 @@
             {{-- ────────────────────────────────────────── --}}
             @else
                 <div wire:key="state-2-ui">
+                    {{-- Overdue Warning Banner --}}
+                    @if($activeLogDate && \Carbon\Carbon::parse($activeLogDate)->lt(\Carbon\Carbon::today('Asia/Jakarta')))
+                        <div class="tw-mb-5 tw-flex tw-items-start tw-gap-3 tw-bg-yellow-50 tw-border tw-border-yellow-400 tw-rounded-lg tw-p-4">
+                            <svg class="tw-h-6 tw-w-6 tw-text-yellow-600 tw-flex-shrink-0 tw-mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            <div>
+                                <p class="tw-text-sm tw-font-bold tw-text-yellow-800 tw-mb-1">⚠️ Overdue Clock-Out Detected</p>
+                                <p class="tw-text-sm tw-text-yellow-800">
+                                    Warning: You forgot to clock out on <strong>{{ \Carbon\Carbon::parse($activeLogDate)->format('d M Y') }}</strong>.
+                                    You must fill in your progress and clock out now to unlock today's timesheet.
+                                    Your clock out time will be automatically recorded as <strong>17:00</strong>.
+                                </p>
+                            </div>
+                        </div>
+                    @endif
+
                     {{-- Active Session Indicator --}}
                     <div class="tw-mb-5 tw-flex tw-items-center tw-gap-3 tw-bg-green-50 tw-border tw-border-green-200 tw-rounded-lg tw-p-4">
                         <div class="tw-relative tw-flex tw-h-3 tw-w-3">
@@ -233,9 +250,9 @@
                 <table class="tw-min-w-full tw-divide-y tw-divide-gray-200">
                     <thead class="tw-bg-gray-50">
                         <tr>
+                            <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Date</th>
                             <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Task</th>
-                            <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Clock In</th>
-                            <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Clock Out</th>
+                            <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Time</th>
                             <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Man Hours</th>
                             <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Progress</th>
                             <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">Notes</th>
@@ -244,13 +261,14 @@
                     <tbody class="tw-bg-white tw-divide-y tw-divide-gray-200">
                         @forelse($todaysLogs as $log)
                             <tr class="hover:tw-bg-gray-50 tw-transition-colors">
+                                <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-text-gray-900 tw-font-medium">
+                                    {{ \Carbon\Carbon::parse($log->log_date ?? $log->created_at)->format('d M Y') }}
+                                </td>
                                 <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-font-medium tw-text-gray-900">
                                     {{ $log->task->wbs_code ?? '' }} — {{ $log->task->name ?? 'Unknown' }}
                                 </td>
                                 <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-text-gray-600">
-                                    {{ $log->clock_in ? \Carbon\Carbon::parse($log->clock_in)->format('H:i') : '—' }}
-                                </td>
-                                <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-text-gray-600">
+                                    {{ $log->clock_in ? \Carbon\Carbon::parse($log->clock_in)->format('H:i') : '—' }} –
                                     {{ $log->clock_out ? \Carbon\Carbon::parse($log->clock_out)->format('H:i') : '—' }}
                                 </td>
                                 <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-font-semibold tw-text-[#174D9D]">
@@ -263,7 +281,7 @@
                                 <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-font-semibold tw-text-[#174D9D]">
                                     +{{ $log->progress_increment }}%
                                 </td>
-                                <td class="tw-px-6 tw-py-4 tw-text-sm tw-text-gray-600 tw-max-w-xs tw-truncate" title="{{ $log->notes }}">
+                                <td class="tw-px-6 tw-py-4 tw-text-sm tw-text-gray-600 tw-whitespace-normal tw-break-words tw-min-w-[250px]">
                                     {{ $log->notes ?? '—' }}
                                 </td>
                             </tr>

@@ -33,6 +33,7 @@ class DailyLogForm extends Component
     public $activeLogId = null;
     public $activeClockInTime = null;
     public $activeTaskName = null;
+    public $activeLogDate = null;
 
     public $myTasks = [];    // ──────────────────────────────────────────────
     // Validation Rules
@@ -67,15 +68,15 @@ class DailyLogForm extends Component
 
         $this->loadMyTasks();
 
-        // STATE EVALUATION: Check for an active (unclosed) log for today
+        // STATE EVALUATION: Check for any active (unclosed) log — not limited to today
         $activeLog = DailyLog::where('user_id', Auth::id())
-            ->where('log_date', $this->todayDate)
             ->whereNull('clock_out')
             ->first();
 
         if ($activeLog) {
             $this->activeLogId = $activeLog->id;
             $this->taskId = $activeLog->task_id;
+            $this->activeLogDate = $activeLog->log_date;
             $this->activeClockInTime = Carbon::parse($activeLog->clock_in)->format('H:i');
             $this->activeTaskName = $activeLog->task ? $activeLog->task->name : 'Unknown Task';
         }
@@ -91,7 +92,7 @@ class DailyLogForm extends Component
 
         // Only show actionable tasks assigned to this user
         $this->myTasks = Task::with('project')
-            ->where('user_id', $user->id)
+            ->whereHas('users', fn($q) => $q->where('users.id', $user->id))
             ->whereDoesntHave('children')
             ->take(50)
             ->get();
@@ -182,13 +183,26 @@ class DailyLogForm extends Component
             }
 
             $now = Carbon::now('Asia/Jakarta');
+            $logDate = Carbon::parse($log->log_date)->startOfDay();
+            $today = Carbon::today('Asia/Jakarta');
+
+            // Determine clock_out time: if overdue (past day), hardcode 17:00
+            $isOverdue = $logDate->lt($today);
+
+            if ($isOverdue) {
+                $clockOutTime = '17:00:00';
+                // Append late clock-out annotation to notes
+                $this->notes = $this->notes . "\n[Late Clock-Out: Auto-set to 17:00]";
+            } else {
+                $clockOutTime = $now->toTimeString();
+            }
 
             // Update the log with clock out time and auto-approve
             $log->update([
-                'clock_out'          => $now->toTimeString(),
+                'clock_out'          => $clockOutTime,
                 'progress_increment' => $this->progressIncrement,
                 'notes'              => $this->notes,
-                'approval_status'    => 'approved', // Real-time today is auto-approved
+                'approval_status'    => 'approved',
             ]);
 
             // Update total progress in the Tasks table
@@ -212,7 +226,7 @@ class DailyLogForm extends Component
 
     private function resetFormState(): void
     {
-        $this->reset(['activeLogId', 'activeClockInTime', 'activeTaskName', 'taskId', 'progressIncrement', 'notes']);
+        $this->reset(['activeLogId', 'activeClockInTime', 'activeTaskName', 'activeLogDate', 'taskId', 'progressIncrement', 'notes']);
         $this->resetValidation();
     }
 
@@ -283,7 +297,7 @@ class DailyLogForm extends Component
 
     private function validateTaskOwnership($taskId): bool
     {
-        $task = Task::where('user_id', (int) Auth::id())->find($taskId);
+        $task = Task::whereHas('users', fn($q) => $q->where('users.id', (int) Auth::id()))->find($taskId);
         return $task !== null;
     }
 }

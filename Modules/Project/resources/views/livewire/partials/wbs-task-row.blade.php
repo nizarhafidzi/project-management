@@ -123,10 +123,17 @@
 
         {{-- ═══════ ASSIGNED COLUMN (col-span-1) ═══════ --}}
         <div class="tw-col-span-1 tw-text-center tw-flex tw-items-center tw-justify-center">
-            @if($task->user)
-                <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-medium tw-bg-blue-50 tw-text-blue-700 tw-truncate tw-max-w-full" title="{{ $task->user->name }}">
-                    {{ \Illuminate\Support\Str::limit($task->user->name, 8) }}
-                </span>
+            @if($task->users && $task->users->count() > 0)
+                <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-center tw-gap-1">
+                    @foreach($task->users->take(2) as $u)
+                        <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-medium tw-bg-blue-50 tw-text-blue-700 tw-truncate" title="{{ $u->name }}">
+                            {{ \Illuminate\Support\Str::limit($u->name, 8) }}
+                        </span>
+                    @endforeach
+                    @if($task->users->count() > 2)
+                        <span class="tw-text-xs tw-font-medium tw-text-gray-500" title="{{ $task->users->skip(2)->pluck('name')->join(', ') }}">+{{ $task->users->count() - 2 }}</span>
+                    @endif
+                </div>
             @else
                 <span class="tw-text-xs tw-text-gray-400">—</span>
             @endif

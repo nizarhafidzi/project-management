@@ -29,7 +29,7 @@ class TaskPolicy
 
         // Employee: Only their assigned tasks
         if ($user->hasRole('Employee')) {
-            return $task->user_id === $user->id;
+            return $task->users()->where('users.id', $user->id)->exists();
         }
 
         return false;

@@ -2,86 +2,78 @@
 
 namespace Modules\Reporting\Exports;
 
-use Modules\Reporting\Services\WorkforceService;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Modules\Reporting\Models\WorkforceMonthlySummary;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use DateTime;
 
-class WorkforceCoefficientExport implements FromCollection, WithHeadings, WithMapping
+class WorkforceCoefficientExport implements FromArray, WithHeadings
 {
-    protected $month;
-    protected $year;
-    protected $sector;
-    protected $workforceService;
+    protected int $month;
+    protected int $year;
+    protected array $selectedUsers;
 
-    public function __construct($month, $year, $sector = 'All')
+    public function __construct($month, $year, $sector = null, array $selectedUsers = [])
     {
-        $this->month = $month;
-        $this->year = $year;
-        $this->sector = $sector;
-        $this->workforceService = new WorkforceService();
+        $this->month = (int) ($month ?: now()->month);
+        $this->year = (int) ($year ?: now()->year);
+        $this->selectedUsers = $selectedUsers;
     }
 
     /**
-    * @return \Illuminate\Support\Collection
-    */
-    public function collection()
+     * Build the export data array from workforce_monthly_summaries.
+     * Each project in project_details becomes its own row.
+     */
+    public function array(): array
     {
-        // 1. Get the raw data from service
-        $staffData = $this->workforceService->getStaffUtilization($this->sector, $this->month, $this->year);
+        $query = WorkforceMonthlySummary::with('user')
+            ->where('month', $this->month)
+            ->where('year', $this->year);
 
-        // 2. Flatten the data: Create a row for each project of each user
-        $exportData = collect();
+        // Filter by selected users
+        if (!empty($this->selectedUsers)) {
+            $query->whereIn('user_id', $this->selectedUsers);
+        }
 
-        foreach ($staffData as $user) {
-            // If user has active projects, create a row for each
-            if (!empty($user->active_projects_list) && $user->active_projects_list->count() > 0) {
-                foreach ($user->active_projects_list as $project) {
-                    $exportData->push([
-                        'user_name' => $user->name,
-                        'project_name' => $project->name,
-                        // Coefficient is effectively the user's current calculated coefficient (1/N)
-                        // The requirement says: "Coefficient: The project's coefficient (e.g., 0.5, 1...)"
-                        'coefficient' => $user->utilization_coefficient,
-                        'month' => $this->month,
-                        'year' => $this->year,
-                    ]);
-                }
+        $summaries = $query->get();
+
+        $exportData = [];
+
+        foreach ($summaries as $summary) {
+            if (!$summary->user) {
+                continue;
+            }
+
+            $projectDetails = $summary->project_details ?? [];
+
+            if (empty($projectDetails)) {
+                // Still include the user with no project data
+                $exportData[] = [
+                    $summary->user->name,
+                    'N/A',
+                    0,
+                    $summary->total_working_days,
+                    $summary->attended_days,
+                    $summary->total_utilization . '%',
+                    $summary->month,
+                    $summary->year,
+                ];
             } else {
-                // what if user has no projects but was returned (e.g. if sector filter was loose or just listing all staff)?
-                // Service primarily returns users. If active_projects_count is 0, coefficient is 0.
-                // We should probably list them with "No Project" or just skip?
-                // "Data Transformation (Flattening): ... Combine one User and one Project into one row"
-                // If there are no projects, maybe one row with empty project? 
-                // Let's include them to show their availability (0 coefficient)
-                
-                 $exportData->push([
-                    'user_name' => $user->name,
-                    'project_name' => '-',
-                    'coefficient' => 0.00,
-                    'month' => $this->month,
-                    'year' => $this->year,
-                ]);
+                foreach ($projectDetails as $project) {
+                    $exportData[] = [
+                        $summary->user->name,
+                        $project['project_name'] ?? '-',
+                        $project['coefficient'] ?? 0,
+                        $summary->total_working_days,
+                        $summary->attended_days,
+                        $summary->total_utilization . '%',
+                        $summary->month,
+                        $summary->year,
+                    ];
+                }
             }
         }
 
         return $exportData;
-    }
-
-    public function map($row): array
-    {
-        // Format month name for display
-        $monthName = $row['month'] ? DateTime::createFromFormat('!m', $row['month'])->format('F') : 'All Months';
-        $yearName = $row['year'] ?: 'All Years';
-
-        return [
-            $row['user_name'],
-            $row['project_name'],
-            $row['coefficient'],
-            $monthName,
-            $yearName,
-        ];
     }
 
     public function headings(): array
@@ -89,7 +81,10 @@ class WorkforceCoefficientExport implements FromCollection, WithHeadings, WithMa
         return [
             'Name',
             'Project',
-            'Coefficient',
+            'Project Coefficient',
+            'Total Working Days',
+            'Attended Days',
+            'Total Utilization',
             'Month',
             'Year',
         ];

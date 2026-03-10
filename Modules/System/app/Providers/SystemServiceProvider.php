@@ -32,6 +32,7 @@ class SystemServiceProvider extends ServiceProvider
 
         \Livewire\Livewire::component('system::auto-checkout-settings', \Modules\System\Livewire\AutoCheckoutSettings::class);
         \Livewire\Livewire::component('system::user-manager', \Modules\System\Livewire\UserManager::class);
+        \Livewire\Livewire::component('system::holiday-manager', \Modules\System\Livewire\HolidayManager::class);
     }
 
     /**
