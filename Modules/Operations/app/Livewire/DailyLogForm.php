@@ -197,17 +197,29 @@ class DailyLogForm extends Component
                 $clockOutTime = $now->toTimeString();
             }
 
-            // Update the log with clock out time and auto-approve
+            $approvalStatus = 'approved';
+            $progressToSave = $this->progressIncrement;
+
+            if ($log->task) {
+                $projectedProgress = (float)$log->task->total_progress + (float)$this->progressIncrement;
+                if ($projectedProgress >= 100) {
+                    $progressToSave = max(0, 100 - $log->task->total_progress);
+                    $approvalStatus = 'pending';
+                    $this->notes = "[FINAL REVIEW] " . ltrim($this->notes);
+                }
+            }
+
+            // Update the log with clock out time and auto-approve (or pending if 100%)
             $log->update([
                 'clock_out'          => $clockOutTime,
-                'progress_increment' => $this->progressIncrement,
+                'progress_increment' => $progressToSave,
                 'notes'              => $this->notes,
-                'approval_status'    => 'approved',
+                'approval_status'    => $approvalStatus,
             ]);
 
-            // Update total progress in the Tasks table
-            if ($log->task) {
-                $log->task->total_progress = min(100, $log->task->total_progress + $this->progressIncrement);
+            // Update total progress in the Tasks table ONLY if approved
+            if ($log->task && $approvalStatus === 'approved') {
+                $log->task->total_progress = min(100, $log->task->total_progress + $progressToSave);
                 $log->task->save();
                 if (method_exists($log->task, 'recalculateProgress')) {
                     $log->task->recalculateProgress();
@@ -251,13 +263,24 @@ class DailyLogForm extends Component
 
         abort_if(! $this->validateTaskOwnership($this->taskId), 403, 'Unauthorized action.');
 
+        $progressToSave = $this->progressIncrement;
+        $task = Task::find($this->taskId);
+        
+        if ($task) {
+            $projectedProgress = (float)$task->total_progress + (float)$this->progressIncrement;
+            if ($projectedProgress >= 100) {
+                $progressToSave = max(0, 100 - $task->total_progress);
+                $this->notes = "[FINAL REVIEW] " . ltrim($this->notes);
+            }
+        }
+
         DailyLog::create([
             'user_id'            => Auth::id(),
             'task_id'            => $this->taskId,
             'log_date'           => $this->backdateDate,
             'clock_in'           => $this->clockIn,
             'clock_out'          => $this->clockOut,
-            'progress_increment' => $this->progressIncrement,
+            'progress_increment' => $progressToSave,
             'notes'              => $this->notes,
             'is_backdate'        => true,
             'approval_status'    => 'pending',

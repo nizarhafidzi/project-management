@@ -10,12 +10,40 @@ class ApprovalManager extends Component
 {
     public string $rejectionReason = '';
 
+    public function mount()
+    {
+        abort_if(!auth()->user()->hasAnyRole(['Superadmin', 'Manager', 'Team Leader']), 403);
+    }
+
+    public function canApproveLog($logId)
+    {
+        $user = auth()->user();
+        if ($user->hasAnyRole(['Superadmin', 'Manager'])) {
+            return true;
+        }
+
+        $log = DailyLog::find($logId);
+        if (!$log) {
+            return false;
+        }
+
+        // Detect whether this is a Backdate (log_date is less than the record's creation date startOfDay)
+        // Also respect the existing is_backdate flag on DailyLog if present.
+        $isBackdate = \Carbon\Carbon::parse($log->log_date)->lt(\Carbon\Carbon::parse($log->created_at)->startOfDay()) || $log->is_backdate;
+
+        if ($user->hasRole('Team Leader') && $isBackdate) {
+            return false; // Team Leader cannot approve Backdate
+        }
+
+        return true;
+    }
+
     /**
-     * Approve a backdate request — marks log as approved and applies progress to task.
+     * Approve a request — marks log as approved and applies progress to task.
      */
     public function approve(int $logId): void
     {
-        abort_if(auth()->user()->hasRole('Employee'), 403);
+        abort_if(!$this->canApproveLog($logId), 403);
 
         $log = DailyLog::findOrFail($logId);
 
@@ -27,21 +55,32 @@ class ApprovalManager extends Component
         if ($log->progress_increment > 0) {
             $task = $log->task;
             if ($task) {
-                $task->total_progress = min(100, $task->total_progress + $log->progress_increment);
+                $newProgress = $task->total_progress + $log->progress_increment;
+
+                if ($newProgress >= 100) {
+                    $task->total_progress = 100;
+                    $task->status = 'Completed';
+                } else {
+                    $task->total_progress = $newProgress;
+                }
+                
                 $task->save();
-                $task->recalculateProgress();
+                
+                if (method_exists($task, 'recalculateProgress')) {
+                    $task->recalculateProgress();
+                }
             }
         }
 
-        session()->flash('message', 'Backdate log approved successfully. Progress has been applied.');
+        session()->flash('message', 'Log approved successfully. Progress has been applied.');
     }
 
     /**
-     * Reject a backdate request — marks log as rejected with a reason.
+     * Reject a request — marks log as rejected with a reason.
      */
     public function reject(int $logId): void
     {
-        abort_if(auth()->user()->hasRole('Employee'), 403);
+        abort_if(!$this->canApproveLog($logId), 403);
 
         $this->validate([
             'rejectionReason' => 'required|string|min:3|max:500',
@@ -55,7 +94,7 @@ class ApprovalManager extends Component
         ]);
 
         $this->rejectionReason = '';
-        session()->flash('message', 'Backdate log rejected.');
+        session()->flash('message', 'Log rejected.');
     }
 
     #[Layout('layouts.app')]
@@ -65,19 +104,27 @@ class ApprovalManager extends Component
             ->pendingApproval()
             ->orderBy('log_date', 'desc');
 
-        if (auth()->check() && auth()->user()->hasRole('Employee')) {
-            $query->where('user_id', auth()->id());
+        if (auth()->check() && auth()->user()->hasRole('Team Leader') && !auth()->user()->hasAnyRole(['Superadmin', 'Manager'])) {
+            $query->whereHas('task.project.tasks.users', function ($q) {
+                $q->where('users.id', auth()->id());
+            });
         }
 
         $pendingLogs = $query->get();
 
 
-        $recentDecisions = DailyLog::with(['user', 'task.project'])
-            ->where('is_backdate', true)
+        $recentDecisionsQuery = DailyLog::with(['user', 'task.project'])
             ->whereIn('approval_status', ['approved', 'rejected'])
             ->orderBy('updated_at', 'desc')
-            ->take(10)
-            ->get();
+            ->take(10);
+            
+        if (auth()->check() && auth()->user()->hasRole('Team Leader') && !auth()->user()->hasAnyRole(['Superadmin', 'Manager'])) {
+            $recentDecisionsQuery->whereHas('task.project.tasks.users', function ($q) {
+                $q->where('users.id', auth()->id());
+            });
+        }
+
+        $recentDecisions = $recentDecisionsQuery->get();
 
         return view('operations::livewire.approval-manager', [
             'pendingLogs' => $pendingLogs,

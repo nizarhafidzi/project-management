@@ -189,8 +189,27 @@
                     </div>
 
                     <h3 class="tw-text-lg tw-font-semibold tw-text-gray-900 tw-mb-5">Complete Your Log</h3>
+                    
+                    @php
+                        $activeTaskProgress = \Modules\Project\Models\Task::find($taskId)->total_progress ?? 0;
+                    @endphp
 
-                    <div class="tw-grid tw-grid-cols-1 tw-gap-4">
+                    <div class="tw-grid tw-grid-cols-1 tw-gap-4" x-data="{ currentProgress: {{ (float) $activeTaskProgress }}, inputProgress: @entangle('progressIncrement').live }">
+                        
+                        {{-- QC Final Review Warning --}}
+                        <div x-show="(Number(currentProgress) + Number(inputProgress || 0)) >= 100" class="tw-col-span-full" style="display: none;">
+                            <div class="tw-flex tw-items-start tw-gap-3 tw-bg-yellow-50 tw-border tw-border-yellow-200 tw-rounded-lg tw-p-4">
+                                <svg class="tw-h-5 tw-w-5 tw-text-yellow-500 tw-flex-shrink-0 tw-mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                </svg>
+                                <div>
+                                    <p class="tw-text-sm tw-text-yellow-800">
+                                        <strong>Info:</strong> Submitting 100% progress will change the status of this report to Pending for review by your Team Leader/Manager for Final Review.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- Task/Project Dropdown (Disabled/Readonly) --}}
                         <div class="tw-col-span-full">
                             <label for="state2-taskId" class="tw-block tw-text-sm tw-font-medium tw-text-gray-700 tw-mb-1">Selected Task / Project</label>
@@ -314,8 +333,28 @@
         </div>
 
         {{-- Backdate Form Card --}}
-        <div class="tw-bg-white tw-shadow-sm tw-rounded-lg tw-border tw-border-gray-200 tw-p-6 tw-mb-6">
+        <div class="tw-bg-white tw-shadow-sm tw-rounded-lg tw-border tw-border-gray-200 tw-p-6 tw-mb-6"
+             x-data="{ 
+                 tasksProgress: {{ Js::from($myTasks->pluck('total_progress', 'id')) }}, 
+                 selectedTaskId: @entangle('taskId').live, 
+                 inputProgress: @entangle('progressIncrement').live 
+             }">
             <h3 class="tw-text-lg tw-font-semibold tw-text-gray-900 tw-mb-5">Submit Backdate Request</h3>
+            
+            {{-- QC Final Review Warning --}}
+            <div x-show="selectedTaskId && tasksProgress[selectedTaskId] !== undefined && ((Number(tasksProgress[selectedTaskId] || 0) + Number(inputProgress || 0)) >= 100)" class="tw-mb-5" style="display: none;">
+                <div class="tw-flex tw-items-start tw-gap-3 tw-bg-yellow-50 tw-border tw-border-yellow-200 tw-rounded-lg tw-p-4">
+                    <svg class="tw-h-5 tw-w-5 tw-text-yellow-500 tw-flex-shrink-0 tw-mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                        <p class="tw-text-sm tw-text-yellow-800">
+                            <strong>Info:</strong> Submitting 100% progress will change the status of this report to Pending for review by your Team Leader/Manager for Final Review.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div class="tw-grid tw-grid-cols-1 tw-gap-5">
 
                 {{-- Task - Full Width --}}
