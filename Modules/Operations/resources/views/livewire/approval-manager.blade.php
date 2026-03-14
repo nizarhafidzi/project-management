@@ -118,17 +118,12 @@
                                                 <svg class="tw-w-4 tw-h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                             </button>
                                             {{-- Reject Button --}}
-                                            <button wire:click="reject({{ $log->id }})"
+                                            <button wire:click="openRejectModal({{ $log->id }})"
                                                     title="Reject"
                                                     class="tw-text-red-600 hover:tw-text-red-900 tw-bg-red-50 hover:tw-bg-red-100 tw-p-1.5 tw-rounded tw-transition">
                                                 <svg class="tw-w-4 tw-h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                             </button>
                                         </div>
-                                        {{-- Rejection Reason Input --}}
-                                        <input type="text" wire:model="rejectionReason"
-                                               placeholder="Reason for rejection..."
-                                               class="tw-w-full tw-rounded-md tw-border-gray-300 tw-shadow-sm tw-px-2 tw-py-1 tw-text-xs focus:tw-ring-[#174D9D] focus:tw-border-[#174D9D]">
-                                        @error('rejectionReason') <span class="tw-text-red-500 tw-text-xs">{{ $message }}</span> @enderror
                                     </div>
                                 @else
                                     <span class="tw-px-2 tw-py-1 tw-bg-gray-100 tw-text-gray-500 tw-text-xs tw-italic tw-rounded tw-inline-block tw-max-w-[150px] tw-whitespace-normal tw-text-center">Requires Manager/<br>Superadmin Approval</span>
@@ -186,6 +181,47 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+        </div>
+    @endif
+
+    {{-- ===== Reject & Revise Modal ===== --}}
+    @if($isRejectModalOpen)
+        <div class="tw-fixed tw-inset-0 tw-z-50 tw-flex tw-items-center tw-justify-center tw-overflow-y-auto tw-overflow-x-hidden tw-bg-gray-900 tw-bg-opacity-50">
+            <div class="tw-relative tw-w-full tw-max-w-md tw-p-4">
+                <div class="tw-relative tw-bg-white tw-rounded-lg tw-shadow">
+                    {{-- Modal Header --}}
+                    <div class="tw-flex tw-items-center tw-justify-between tw-p-4 tw-border-b tw-rounded-t">
+                        <h3 class="tw-text-lg tw-font-semibold tw-text-gray-900">
+                            Reject & Revise Progress
+                        </h3>
+                        <button type="button" wire:click="$set('isRejectModalOpen', false)" class="tw-text-gray-400 tw-bg-transparent hover:tw-bg-gray-200 hover:tw-text-gray-900 tw-rounded-lg tw-text-sm tw-w-8 tw-h-8 tw-ms-auto tw-inline-flex tw-justify-center tw-items-center">
+                            <svg class="tw-w-3 tw-h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                            </svg>
+                            <span class="tw-sr-only">Close modal</span>
+                        </button>
+                    </div>
+                    {{-- Modal Body --}}
+                    <div class="tw-p-4 tw-space-y-4">
+                        <div>
+                            <label for="revisedProgress" class="tw-block tw-mb-2 tw-text-sm tw-font-medium tw-text-gray-900">Revised Progress (%)</label>
+                            <input type="number" id="revisedProgress" wire:model="revisedProgress" min="0" max="99" class="tw-bg-gray-50 tw-border tw-border-gray-300 tw-text-gray-900 tw-text-sm tw-rounded-lg focus:tw-ring-[#174D9D] focus:tw-border-[#174D9D] tw-block tw-w-full tw-p-2.5" placeholder="e.g. 85" required>
+                            @error('revisedProgress') <span class="tw-text-red-500 tw-text-xs">{{ $message }}</span> @enderror
+                            <p class="tw-mt-1 tw-text-xs tw-text-gray-500">Maximum allowed progress is 99% upon rejection.</p>
+                        </div>
+                        <div>
+                            <label for="rejectReason" class="tw-block tw-mb-2 tw-text-sm tw-font-medium tw-text-gray-900">Reason / Notes</label>
+                            <textarea id="rejectReason" wire:model="rejectReason" rows="3" class="tw-block tw-p-2.5 tw-w-full tw-text-sm tw-text-gray-900 tw-bg-gray-50 tw-rounded-lg tw-border tw-border-gray-300 focus:tw-ring-[#174D9D] focus:tw-border-[#174D9D]" placeholder="E.g., The notes are incomplete, I set it to 85% first..." required></textarea>
+                            @error('rejectReason') <span class="tw-text-red-500 tw-text-xs">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                    {{-- Modal Footer --}}
+                    <div class="tw-flex tw-items-center tw-p-4 tw-border-t tw-border-gray-200 tw-rounded-b">
+                        <button wire:click="confirmReject" type="button" class="tw-text-white tw-bg-red-600 hover:tw-bg-red-700 focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-red-300 tw-font-medium tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center">Confirm Reject & Revise</button>
+                        <button wire:click="$set('isRejectModalOpen', false)" type="button" class="tw-py-2.5 tw-px-5 tw-ms-3 tw-text-sm tw-font-medium tw-text-gray-900 focus:tw-outline-none tw-bg-white tw-rounded-lg tw-border tw-border-gray-200 hover:tw-bg-gray-100 hover:tw-text-[#174D9D] focus:tw-z-10 focus:tw-ring-4 focus:tw-ring-gray-100">Cancel</button>
+                    </div>
+                </div>
             </div>
         </div>
     @endif

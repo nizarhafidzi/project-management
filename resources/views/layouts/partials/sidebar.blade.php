@@ -75,6 +75,7 @@
         </a>
 
         {{-- Approvals --}}
+        @hasanyrole('Superadmin|Manager|Team Leader')
         <a href="{{ route('operations.approvals') }}" wire:navigate
            class="tw-flex tw-items-center tw-py-2.5 tw-text-sm tw-font-medium tw-rounded-lg tw-transition-colors tw-duration-200 tw-group
            {{ request()->routeIs('operations.approvals') ? 'tw-bg-blue-50 tw-border-l-4 tw-border-[#174D9D] tw-text-[#174D9D] tw-pl-3' : 'tw-text-gray-600 hover:tw-bg-gray-100 hover:tw-text-gray-900 tw-px-3' }}"
@@ -84,6 +85,7 @@
             </svg>
             <span class="tw-ml-3 tw-whitespace-nowrap" x-show="isSidebarOpen" x-transition.opacity.duration.200ms>Approvals</span>
         </a>
+        @endhasanyrole
 
         {{-- System Section --}}
         @role('Superadmin')

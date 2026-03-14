@@ -25,6 +25,22 @@
 
     {{-- Main Form Card --}}
     <div class="tw-bg-white tw-shadow-sm tw-rounded-lg tw-border tw-border-gray-200 tw-overflow-hidden">
+        
+        {{-- Global Validation Errors Banner --}}
+        @if ($errors->any())
+            <div class="tw-m-6 tw-bg-red-50 tw-border tw-border-red-200 tw-text-red-700 tw-px-4 tw-py-3 tw-rounded-lg">
+                <div class="tw-flex tw-items-center tw-mb-2">
+                    <svg class="tw-w-5 tw-h-5 tw-mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                    <span class="tw-font-bold">Please fix the following validation errors:</span>
+                </div>
+                <ul class="tw-list-disc tw-list-inside tw-text-sm tw-ml-2">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <form wire:submit="save">
             {{-- Project Code Preview --}}
             @if ($project_code)
@@ -240,14 +256,21 @@
                     {{ __('Cancel') }}
                 </a>
                 <button type="submit"
-                        class="tw-inline-flex tw-items-center tw-rounded-lg tw-px-5 tw-py-2.5 tw-text-sm tw-font-semibold tw-text-white tw-shadow-sm tw-transition-all tw-duration-200 focus:tw-outline-none focus:tw-ring-4 focus:tw-ring-blue-100"
+                        class="tw-inline-flex tw-items-center tw-rounded-lg tw-px-5 tw-py-2.5 tw-text-sm tw-font-semibold tw-text-white tw-shadow-sm tw-transition-all tw-duration-200 focus:tw-outline-none focus:tw-ring-4 focus:tw-ring-blue-100 disabled:tw-opacity-70 disabled:tw-cursor-not-allowed"
                         style="background-color: #174D9D;"
                         onmouseover="this.style.backgroundColor='#123d7e'"
-                        onmouseout="this.style.backgroundColor='#174D9D'">
-                    <svg class="tw-mr-2 tw-h-4 tw-w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        onmouseout="this.style.backgroundColor='#174D9D'"
+                        wire:loading.attr="disabled"
+                        wire:target="save">
+                    <svg wire:loading.remove wire:target="save" class="tw-mr-2 tw-h-4 tw-w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
-                    {{ $isEdit ? __('Update Project') : __('Create Project') }}
+                    <svg wire:loading wire:target="save" class="tw-mr-2 tw-h-4 tw-w-4 tw-animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="tw-opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="tw-opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span wire:loading.remove wire:target="save">{{ $isEdit ? __('Update Project') : __('Create Project') }}</span>
+                    <span wire:loading wire:target="save">{{ __('Processing...') }}</span>
                 </button>
             </div>
         </form>

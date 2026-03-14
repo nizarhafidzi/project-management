@@ -172,6 +172,7 @@ class ProjectForm extends Component
             ]);
 
             $project = Project::create($data);
+            $project->users()->attach(auth()->id(), ['role_in_project' => 'Team Leader']);
             session()->flash('message', 'Project created successfully.');
         }
 
@@ -229,7 +230,7 @@ class ProjectForm extends Component
              \Illuminate\Support\Facades\Log::info('ACC Integration Skipped (Checkbox not checked)');
         }
 
-        $this->redirect(route('project.index'), navigate: true);
+        $this->redirect(route('project.show', $project), navigate: true);
     }
 
     #[\Livewire\Attributes\Layout('layouts.app')]

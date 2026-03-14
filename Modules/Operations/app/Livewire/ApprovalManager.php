@@ -10,6 +10,12 @@ class ApprovalManager extends Component
 {
     public string $rejectionReason = '';
 
+    // Modals state for revision
+    public bool $isRejectModalOpen = false;
+    public ?int $rejectLogId = null;
+    public int $revisedProgress = 0;
+    public string $rejectReason = '';
+
     public function mount()
     {
         abort_if(!auth()->user()->hasAnyRole(['Superadmin', 'Manager', 'Team Leader']), 403);
@@ -76,25 +82,80 @@ class ApprovalManager extends Component
     }
 
     /**
-     * Reject a request — marks log as rejected with a reason.
+     * Open the reject modal for a specific log and initialize its progress.
      */
-    public function reject(int $logId): void
+    public function openRejectModal(int $logId): void
     {
         abort_if(!$this->canApproveLog($logId), 403);
 
-        $this->validate([
-            'rejectionReason' => 'required|string|min:3|max:500',
-        ]);
-
         $log = DailyLog::findOrFail($logId);
+        $this->rejectLogId = $logId;
+        // Default to the task's current total progress, or 0 if not set
+        $this->revisedProgress = $log->task ? $log->task->total_progress : 0;
+        $this->rejectReason = '';
+        $this->isRejectModalOpen = true;
+    }
 
-        $log->update([
-            'approval_status' => 'rejected',
-            'rejection_reason' => $this->rejectionReason,
+    /**
+     * Confirm rejection and revise task progress.
+     */
+    public function confirmReject(): void
+    {
+        abort_if(!$this->canApproveLog($this->rejectLogId), 403);
+
+        $this->validate([
+            'revisedProgress' => 'required|numeric|min:0|max:100',
+            'rejectReason' => 'required|string|min:3|max:500',
         ]);
 
-        $this->rejectionReason = '';
-        session()->flash('message', 'Log rejected.');
+        $log = DailyLog::findOrFail($this->rejectLogId);
+        $task = $log->task;
+        $revisedProgressInt = (int) $this->revisedProgress;
+
+        if ($task) {
+            if ($revisedProgressInt < $task->total_progress) {
+                // Give an error/flash message: Revised progress cannot be lower than previous
+                session()->flash('error', "Revised progress cannot be lower than the previously approved progress ({$task->total_progress}%).");
+                return;
+            }
+
+            // Calculate the incremental progress that supervisor allows
+            $allowedIncrement = $revisedProgressInt - $task->total_progress;
+
+            // Instead of saving it as rejected, save it as approved
+            $log->progress_increment = $allowedIncrement;
+            $log->approval_status = 'approved';
+            $log->rejection_reason = $this->rejectReason; // keep track of the reason
+            $log->notes = "[REVISED by Leader] Claimed 100%, Approved as " . $revisedProgressInt . "% | Reason: " . $this->rejectReason . "\n---\n" . ($log->notes ?? '');
+            $log->save();
+
+            // Update & Recalculate Task
+            $task->total_progress = $revisedProgressInt;
+            if ($revisedProgressInt >= 100) {
+                $task->status = 'Completed';
+            } elseif ($revisedProgressInt < 100 && $task->status === 'Completed') {
+                $task->status = 'In Progress'; // or whatever the active status is
+            }
+            $task->save();
+
+            // Call recalculate if it exists
+            if (method_exists($task, 'recalculateProgress')) {
+                $task->recalculateProgress();
+            }
+        } else {
+            // Fallback if there is no task attached to the log
+            $log->progress_increment = $revisedProgressInt;
+            $log->approval_status = 'approved';
+            $log->rejection_reason = $this->rejectReason;
+            $log->notes = "[REVISED by Leader] Claimed 100%, Approved as " . $revisedProgressInt . "% | Reason: " . $this->rejectReason . "\n---\n" . ($log->notes ?? '');
+            $log->save();
+        }
+
+        $this->isRejectModalOpen = false;
+        $this->rejectLogId = null;
+        $this->rejectReason = '';
+        
+        session()->flash('message', 'Log revised and approved successfully.');
     }
 
     #[Layout('layouts.app')]
@@ -105,7 +166,7 @@ class ApprovalManager extends Component
             ->orderBy('log_date', 'desc');
 
         if (auth()->check() && auth()->user()->hasRole('Team Leader') && !auth()->user()->hasAnyRole(['Superadmin', 'Manager'])) {
-            $query->whereHas('task.project.tasks.users', function ($q) {
+            $query->whereHas('task.project.users', function ($q) {
                 $q->where('users.id', auth()->id());
             });
         }
@@ -119,7 +180,7 @@ class ApprovalManager extends Component
             ->take(10);
             
         if (auth()->check() && auth()->user()->hasRole('Team Leader') && !auth()->user()->hasAnyRole(['Superadmin', 'Manager'])) {
-            $recentDecisionsQuery->whereHas('task.project.tasks.users', function ($q) {
+            $recentDecisionsQuery->whereHas('task.project.users', function ($q) {
                 $q->where('users.id', auth()->id());
             });
         }
