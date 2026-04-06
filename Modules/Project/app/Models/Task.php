@@ -24,6 +24,9 @@ class Task extends Model
         'coefficient',
         'start_date',
         'end_date',
+        'actual_start_date',
+        'actual_end_date',
+        'status',
         'total_progress',
         'sort_order',
     ];
@@ -36,6 +39,8 @@ class Task extends Model
             'total_progress' => 'decimal:2',
             'start_date' => 'date',
             'end_date' => 'date',
+            'actual_start_date' => 'date',
+            'actual_end_date' => 'date',
             'sort_order' => 'integer',
         ];
     }

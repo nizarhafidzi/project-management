@@ -46,6 +46,21 @@
                 </svg>
                 Add Root Task
             </button>
+
+            {{-- Bulk Assign --}}
+            @if (count($selectedTasks) > 0)
+                <button type="button" 
+                        wire:click="openBulkAssignModal"
+                        wire:key="bulk-assign-btn-{{ count($selectedTasks) }}"
+                        class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-rounded-lg tw-text-sm tw-font-medium tw-text-white tw-shadow-sm tw-transition-colors tw-border tw-border-transparent"
+                        style="background-color: #3b82f6;"
+                        onmouseover="this.style.backgroundColor='#2563eb'" onmouseout="this.style.backgroundColor='#3b82f6'">
+                    <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Bulk Assign ({{ count($selectedTasks) }})
+                </button>
+            @endif
         @endif
 
         {{-- Secondary: Expand All --}}
@@ -202,22 +217,33 @@
 
         @if ($rootTasks->count() > 0)
             {{-- ═══════════ TREE GRID HEADER ═══════════ --}}
-            <div class="tw-hidden md:tw-grid tw-grid-cols-12 tw-gap-2 tw-bg-gray-50 tw-border-b tw-border-gray-200 tw-px-4 tw-py-3 tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-tracking-wider">
-                <div class="tw-col-span-4">Task Name</div>
-                <div class="tw-col-span-1 tw-text-center">WBS Code</div>
-                <div class="tw-col-span-1 tw-text-center">Weight (%)</div>
-                <div class="tw-col-span-1 tw-text-center">Start Date</div>
-                <div class="tw-col-span-1 tw-text-center">End Date</div>
-                <div class="tw-col-span-1 tw-text-center">Progress</div>
-                <div class="tw-col-span-1 tw-text-center">Assigned</div>
-                <div class="tw-col-span-2 tw-text-right">Actions</div>
+            <div class="tw-overflow-x-auto">
+            <div class="tw-hidden md:tw-grid tw-gap-2 tw-bg-gray-50 tw-border-b tw-border-gray-200 tw-px-4 tw-py-3 tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-tracking-wider" style="grid-template-columns: 3.5fr 0.8fr 0.6fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.6fr 0.8fr 1fr; min-width: 1100px;">
+                <div class="tw-flex tw-items-center">
+                    @if ($canManage)
+                        <div class="tw-w-4 tw-mr-3"></div>
+                    @endif
+                    Task Name
+                </div>
+                <div class="tw-text-center">WBS Code</div>
+                <div class="tw-text-center">Weight</div>
+                <div class="tw-text-center">Plan Start</div>
+                <div class="tw-text-center">Plan End</div>
+                <div class="tw-text-center">Actual Start</div>
+                <div class="tw-text-center">Actual End</div>
+                <div class="tw-text-center">Status</div>
+                <div class="tw-text-center">Progress</div>
+                <div class="tw-text-center">Assigned</div>
+                <div class="tw-text-right">Actions</div>
             </div>
 
             {{-- ═══════════ TASK ROWS ═══════════ --}}
+            <div class="tw-overflow-x-auto">
             <div class="tw-divide-y tw-divide-gray-100">
                 @foreach ($rootTasks as $task)
                     @include('project::livewire.partials.wbs-task-row', ['task' => $task, 'depth' => 0])
                 @endforeach
+            </div>
             </div>
         @else
             {{-- ═══════════ EMPTY STATE ═══════════ --}}
@@ -501,4 +527,68 @@
             </div>
         </div>
     </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════
+         BULK ASSIGN MODAL
+    ═══════════════════════════════════════════════════════════════ --}}
+    @if ($showBulkAssignModal)
+        <div class="tw-fixed tw-inset-0 tw-z-50 tw-overflow-y-auto">
+            <div class="tw-flex tw-items-center tw-justify-center tw-min-h-screen tw-px-4 tw-py-6">
+                <div class="tw-fixed tw-inset-0 tw-bg-gray-900/60 tw-backdrop-blur-sm tw-transition-opacity" wire:click="closeBulkAssignModal"></div>
+
+                <div class="tw-relative tw-bg-white tw-rounded-xl tw-shadow-2xl tw-w-full tw-max-w-lg tw-transform tw-transition-all">
+                    {{-- Header --}}
+                    <div class="tw-px-6 tw-py-4 tw-border-b tw-border-gray-200">
+                        <div class="tw-flex tw-items-center tw-justify-between">
+                            <div>
+                                <h3 class="tw-text-lg tw-font-semibold tw-text-gray-900">Bulk Assign Users</h3>
+                                <p class="tw-text-sm tw-text-gray-500 tw-mt-0.5">
+                                    Assign users to {{ count($selectedTasks) }} selected tasks. <br>
+                                    <span class="tw-text-xs tw-text-gray-400">This will not remove existing assignments.</span>
+                                </p>
+                            </div>
+                            <button wire:click="closeBulkAssignModal" class="tw-p-1 tw-rounded-lg tw-text-gray-400 hover:tw-text-gray-600 hover:tw-bg-gray-100 tw-transition-colors">
+                                <svg class="tw-w-5 tw-h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Body --}}
+                    <div class="tw-px-6 tw-py-5">
+                        <div class="tw-max-h-60 tw-overflow-y-auto tw-border tw-border-gray-300 tw-rounded-lg tw-p-3 tw-space-y-2 tw-bg-gray-50/50">
+                            @forelse($projectMembers as $member)
+                                <label for="bulkAssignUser{{ $member->id }}" class="tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer tw-p-1.5 tw-rounded-md hover:tw-bg-blue-50 tw-transition-colors">
+                                    <input type="checkbox" wire:model="bulkAssignUsers"
+                                           id="bulkAssignUser{{ $member->id }}"
+                                           value="{{ $member->id }}"
+                                           class="tw-rounded tw-border-gray-300 tw-text-blue-600 tw-shadow-sm focus:tw-ring-blue-500" />
+                                    <span class="tw-text-sm tw-text-gray-800 tw-font-medium">{{ $member->name }}</span>
+                                    @if($member->pivot && $member->pivot->role_in_project)
+                                        <span class="tw-text-xs tw-text-gray-400">({{ $member->pivot->role_in_project }})</span>
+                                    @endif
+                                </label>
+                            @empty
+                                <p class="tw-text-xs tw-text-gray-400 tw-text-center tw-py-2">No project members available.</p>
+                            @endforelse
+                        </div>
+                        <x-input-error :messages="$errors->get('bulkAssignUsers')" class="tw-mt-1" />
+                    </div>
+
+                    {{-- Footer --}}
+                    <div class="tw-px-6 tw-py-4 tw-border-t tw-border-gray-200 tw-bg-gray-50/50 tw-flex tw-justify-end tw-gap-3 tw-rounded-b-xl">
+                        <button wire:click="closeBulkAssignModal" type="button"
+                                class="tw-px-4 tw-py-2 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors tw-shadow-sm">
+                            Cancel
+                        </button>
+                        <button wire:click="applyBulkAssign" type="button"
+                                class="tw-px-4 tw-py-2 tw-rounded-lg tw-text-sm tw-font-medium tw-text-white tw-shadow-sm tw-transition-colors tw-border tw-border-transparent"
+                                style="background-color: #3b82f6;"
+                                onmouseover="this.style.backgroundColor='#2563eb'" onmouseout="this.style.backgroundColor='#3b82f6'">
+                            Apply Assignment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

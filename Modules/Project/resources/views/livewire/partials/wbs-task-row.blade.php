@@ -1,23 +1,27 @@
 {{-- ═══════════════════════════════════════════════════════════════
      Recursive WBS Task Row
-     Aligned with tree grid header: Task(4) | WBS(1) | Weight(1) | Start(1) | End(1) | Progress(1) | Assigned(1) | Actions(2)
+     Proportional grid: Task | WBS | Weight | PlanStart | PlanEnd | ActStart | ActEnd | Status | Progress | Assigned | Actions
 ═══════════════════════════════════════════════════════════════ --}}
 @php
     $hasChildren = $task->childrenRecursive && $task->childrenRecursive->count() > 0;
     $isExpanded = in_array($task->id, $expandedNodes);
-    $indent = $depth * 1.5; // rem units for indentation
+    $indent = $depth * 1.5;
 @endphp
 
 <div wire:key="task-{{ $task->id }}">
 
     {{-- Row Container --}}
-    <div class="tw-grid tw-grid-cols-12 tw-gap-2 tw-bg-white hover:tw-bg-blue-50 tw-transition-colors tw-border-b tw-border-gray-100 tw-px-4 tw-py-3 tw-group tw-items-center">
+    <div class="tw-grid tw-gap-2 tw-bg-white hover:tw-bg-blue-50/50 tw-transition-colors tw-border-b tw-border-gray-100 tw-px-4 tw-py-3 tw-group tw-items-center" style="grid-template-columns: 3.5fr 0.8fr 0.6fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.6fr 0.8fr 1fr; min-width: 1100px;">
 
-        {{-- ═══════ TASK NAME COLUMN (col-span-4) ═══════ --}}
-        <div class="tw-col-span-4 tw-min-w-0">
+        {{-- ═══════ TASK NAME ═══════ --}}
+        <div class="tw-min-w-0">
             <div class="tw-flex tw-items-center" style="padding-left: {{ $indent }}rem">
 
-                {{-- Expand/Collapse Chevron --}}
+                @if ($canManage)
+                    <input type="checkbox" wire:model.live="selectedTasks" value="{{ $task->id }}"
+                           class="tw-flex-shrink-0 tw-w-4 tw-h-4 tw-mr-3 tw-rounded tw-border-gray-300 tw-text-[#174D9D] focus:tw-ring-[#174D9D]">
+                @endif
+
                 @if ($hasChildren)
                     <button wire:click="toggleNode({{ $task->id }})"
                             class="tw-flex-shrink-0 tw-w-6 tw-h-6 tw-mr-2 tw-flex tw-items-center tw-justify-center tw-text-gray-400 hover:tw-text-[#174D9D] tw-transition-all tw-rounded-md hover:tw-bg-blue-50">
@@ -32,7 +36,6 @@
                     </span>
                 @endif
 
-                {{-- Folder / Document Icon --}}
                 @if ($hasChildren)
                     <svg class="tw-w-4 tw-h-4 tw-mr-2 tw-flex-shrink-0 tw-text-amber-500" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
@@ -43,12 +46,10 @@
                     </svg>
                 @endif
 
-                {{-- Task Name Text --}}
                 <div class="tw-min-w-0 tw-flex-1">
                     <span class="tw-font-medium tw-text-gray-800 tw-text-sm tw-truncate tw-block" title="{{ $task->name }}">
                         {{ $task->name }}
                     </span>
-                    {{-- Linked File (shown under task name for compact view) --}}
                     @if ($task->acc_file_name)
                         <div class="tw-flex tw-items-center tw-gap-1.5 tw-mt-0.5">
                             @if($task->acc_file_urn)
@@ -85,34 +86,67 @@
             </div>
         </div>
 
-        {{-- ═══════ WBS CODE COLUMN (col-span-1) ═══════ --}}
-        <div class="tw-col-span-1 tw-text-center tw-flex tw-items-center tw-justify-center">
+        {{-- ═══════ WBS CODE ═══════ --}}
+        <div class="tw-text-center tw-flex tw-items-center tw-justify-center">
             <span class="tw-bg-gray-100 tw-text-gray-600 tw-px-2 tw-py-0.5 tw-rounded tw-text-xs tw-font-mono tw-font-medium">
                 {{ $task->wbs_code }}
             </span>
         </div>
 
-        {{-- ═══════ WEIGHT COLUMN (col-span-1) ═══════ --}}
-        <div class="tw-col-span-1 tw-text-center">
-            <span class="tw-text-sm tw-font-medium tw-text-gray-700">{{ number_format($task->weight, 1) }}%</span>
-            {{-- Mini progress bar representing weight --}}
+        {{-- ═══════ WEIGHT ═══════ --}}
+        <div class="tw-text-center">
+            <span class="tw-text-xs tw-font-medium tw-text-gray-700">{{ number_format($task->weight, 1) }}%</span>
             <div class="tw-w-full tw-bg-gray-200 tw-rounded-full tw-h-1 tw-mt-1 tw-mx-auto" style="max-width: 3rem;">
                 <div class="tw-h-1 tw-rounded-full tw-transition-all" style="width: {{ min($task->weight, 100) }}%; background-color: #174D9D;"></div>
             </div>
         </div>
 
-        {{-- ═══════ START DATE COLUMN (col-span-1) ═══════ --}}
-        <div class="tw-col-span-1 tw-text-center">
-            <span class="tw-text-gray-500 tw-text-sm">{{ $task->start_date->format('d M Y') }}</span>
+        {{-- ═══════ PLAN START ═══════ --}}
+        <div class="tw-text-center">
+            <span class="tw-text-gray-500 tw-text-[11px] tw-whitespace-nowrap">{{ $task->start_date->format('d M Y') }}</span>
         </div>
 
-        {{-- ═══════ END DATE COLUMN (col-span-1) ═══════ --}}
-        <div class="tw-col-span-1 tw-text-center">
-            <span class="tw-text-gray-500 tw-text-sm">{{ $task->end_date->format('d M Y') }}</span>
+        {{-- ═══════ PLAN END ═══════ --}}
+        <div class="tw-text-center">
+            <span class="tw-text-gray-500 tw-text-[11px] tw-whitespace-nowrap">{{ $task->end_date->format('d M Y') }}</span>
         </div>
 
-        {{-- ═══════ PROGRESS COLUMN (col-span-1) ═══════ --}}
-        <div class="tw-col-span-1 tw-text-center">
+        {{-- ═══════ ACTUAL START ═══════ --}}
+        <div class="tw-text-center">
+            <span class="tw-text-gray-500 tw-text-[11px] tw-whitespace-nowrap">
+                {{ $task->actual_start_date ? \Carbon\Carbon::parse($task->actual_start_date)->format('d M Y') : '-' }}
+            </span>
+        </div>
+
+        {{-- ═══════ ACTUAL END ═══════ --}}
+        <div class="tw-text-center">
+            <span class="tw-text-gray-500 tw-text-[11px] tw-whitespace-nowrap">
+                {{ $task->actual_end_date ? \Carbon\Carbon::parse($task->actual_end_date)->format('d M Y') : '-' }}
+            </span>
+        </div>
+
+        {{-- ═══════ STATUS ═══════ --}}
+        <div class="tw-text-center tw-flex tw-items-center tw-justify-center">
+            @php
+                $statusClass = 'tw-bg-gray-100 tw-text-gray-700';
+                $statusLabel = $task->status ?: 'Not Started';
+                if ($statusLabel === 'In Progress') {
+                    $statusClass = 'tw-bg-blue-100 tw-text-blue-700';
+                } elseif ($statusLabel === 'Completed (Ahead)') {
+                    $statusClass = 'tw-bg-teal-100 tw-text-teal-700';
+                } elseif ($statusLabel === 'Completed (On Time)') {
+                    $statusClass = 'tw-bg-green-100 tw-text-green-700';
+                } elseif ($statusLabel === 'Completed (Late)') {
+                    $statusClass = 'tw-bg-red-100 tw-text-red-700';
+                }
+            @endphp
+            <span class="tw-inline-flex tw-items-center tw-px-1.5 tw-py-0.5 tw-rounded-full tw-text-[10px] tw-font-semibold {{ $statusClass }} tw-whitespace-nowrap" title="{{ $statusLabel }}">
+                {{ $statusLabel === 'Not Started' ? 'Not Started' : ($statusLabel === 'In Progress' ? 'In Progress' : str_replace('Completed ', '', $statusLabel)) }}
+            </span>
+        </div>
+
+        {{-- ═══════ PROGRESS ═══════ --}}
+        <div class="tw-text-center">
             <div class="tw-flex tw-flex-col tw-items-center tw-gap-0.5">
                 <span class="tw-text-xs tw-font-medium tw-text-gray-600">{{ number_format($task->total_progress, 0) }}%</span>
                 <div class="tw-w-full tw-bg-gray-200 tw-rounded-full tw-h-1.5 tw-mx-auto" style="max-width: 3rem;">
@@ -121,17 +155,17 @@
             </div>
         </div>
 
-        {{-- ═══════ ASSIGNED COLUMN (col-span-1) ═══════ --}}
-        <div class="tw-col-span-1 tw-text-center tw-flex tw-items-center tw-justify-center">
+        {{-- ═══════ ASSIGNED ═══════ --}}
+        <div class="tw-text-center tw-flex tw-items-center tw-justify-center">
             @if($task->users && $task->users->count() > 0)
                 <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-center tw-gap-1">
                     @foreach($task->users->take(2) as $u)
-                        <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-medium tw-bg-blue-50 tw-text-blue-700 tw-truncate" title="{{ $u->name }}">
-                            {{ \Illuminate\Support\Str::limit($u->name, 8) }}
+                        <span class="tw-inline-flex tw-items-center tw-px-1.5 tw-py-0.5 tw-rounded-full tw-text-[10px] tw-font-medium tw-bg-blue-50 tw-text-blue-700 tw-truncate" title="{{ $u->name }}">
+                            {{ \Illuminate\Support\Str::limit($u->name, 6) }}
                         </span>
                     @endforeach
                     @if($task->users->count() > 2)
-                        <span class="tw-text-xs tw-font-medium tw-text-gray-500" title="{{ $task->users->skip(2)->pluck('name')->join(', ') }}">+{{ $task->users->count() - 2 }}</span>
+                        <span class="tw-text-[10px] tw-font-medium tw-text-gray-500" title="{{ $task->users->skip(2)->pluck('name')->join(', ') }}">+{{ $task->users->count() - 2 }}</span>
                     @endif
                 </div>
             @else
@@ -139,11 +173,10 @@
             @endif
         </div>
 
-        {{-- ═══════ ACTIONS COLUMN (col-span-2) ═══════ --}}
-        <div class="tw-col-span-2 tw-text-right">
+        {{-- ═══════ ACTIONS ═══════ --}}
+        <div class="tw-text-right">
             <div class="tw-opacity-0 group-hover:tw-opacity-100 tw-transition-opacity tw-duration-150 tw-flex tw-items-center tw-justify-end tw-gap-0.5">
                 @if ($canManage)
-                    {{-- Add Child --}}
                     <button wire:click="openCreateModal({{ $task->id }})"
                             class="tw-inline-flex tw-items-center tw-p-1.5 tw-rounded-md tw-text-gray-400 hover:tw-text-[#174D9D] hover:tw-bg-blue-50 tw-transition-colors"
                             title="Add Sub-Task">
@@ -151,7 +184,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
                     </button>
-                    {{-- Edit --}}
                     <button wire:click="openEditModal({{ $task->id }})"
                             class="tw-inline-flex tw-items-center tw-p-1.5 tw-rounded-md tw-text-gray-400 hover:tw-text-amber-600 hover:tw-bg-amber-50 tw-transition-colors"
                             title="Edit Task">
@@ -159,7 +191,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                         </svg>
                     </button>
-                    {{-- Delete --}}
                     <button wire:click="deleteTask({{ $task->id }})"
                             wire:confirm="Are you sure you want to delete '{{ $task->name }}'? {{ $hasChildren ? 'All sub-tasks will also be removed.' : '' }}"
                             class="tw-inline-flex tw-items-center tw-p-1.5 tw-rounded-md tw-text-gray-400 hover:tw-text-red-600 hover:tw-bg-red-50 tw-transition-colors"

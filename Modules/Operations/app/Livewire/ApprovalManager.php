@@ -65,7 +65,20 @@ class ApprovalManager extends Component
 
                 if ($newProgress >= 100) {
                     $task->total_progress = 100;
-                    $task->status = 'Completed';
+                    
+                    // Trigger Actual End & Status Calculation
+                    $task->actual_end_date = $log->log_date;
+                    
+                    $plannedEnd = \Carbon\Carbon::parse($task->end_date)->startOfDay();
+                    $actualEnd = \Carbon\Carbon::parse($task->actual_end_date)->startOfDay();
+
+                    if ($actualEnd->lt($plannedEnd)) {
+                        $task->status = 'Completed (Ahead)';
+                    } elseif ($actualEnd->eq($plannedEnd)) {
+                        $task->status = 'Completed (On Time)';
+                    } else {
+                        $task->status = 'Completed (Late)';
+                    }
                 } else {
                     $task->total_progress = $newProgress;
                 }
@@ -132,9 +145,22 @@ class ApprovalManager extends Component
             // Update & Recalculate Task
             $task->total_progress = $revisedProgressInt;
             if ($revisedProgressInt >= 100) {
-                $task->status = 'Completed';
-            } elseif ($revisedProgressInt < 100 && $task->status === 'Completed') {
-                $task->status = 'In Progress'; // or whatever the active status is
+                // Trigger Actual End & Status Calculation
+                $task->actual_end_date = $log->log_date;
+                
+                $plannedEnd = \Carbon\Carbon::parse($task->end_date)->startOfDay();
+                $actualEnd = \Carbon\Carbon::parse($task->actual_end_date)->startOfDay();
+
+                if ($actualEnd->lt($plannedEnd)) {
+                    $task->status = 'Completed (Ahead)';
+                } elseif ($actualEnd->eq($plannedEnd)) {
+                    $task->status = 'Completed (On Time)';
+                } else {
+                    $task->status = 'Completed (Late)';
+                }
+            } elseif ($revisedProgressInt < 100 && str_starts_with($task->status, 'Completed')) {
+                $task->status = 'In Progress'; 
+                $task->actual_end_date = null;
             }
             $task->save();
 

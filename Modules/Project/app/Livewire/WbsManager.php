@@ -19,6 +19,11 @@ class WbsManager extends Component
     public bool $isEditing = false;
     public ?int $editingTaskId = null;
 
+    // Bulk state
+    public array $selectedTasks = [];
+    public array $bulkAssignUsers = [];
+    public bool $showBulkAssignModal = false;
+
     // Form fields
     public ?int $formParentId = null;
     public string $formName = '';
@@ -255,6 +260,61 @@ class WbsManager extends Component
         $this->editingTaskId = null;
         $this->parentLabel = '';
         $this->resetValidation();
+    }
+
+    // ──────────────────────────────────────────────
+    // Bulk Assignment
+    // ──────────────────────────────────────────────
+
+    public function openBulkAssignModal(): void
+    {
+        abort_if(!$this->canManage, 403);
+        
+        if (empty($this->selectedTasks)) {
+            $this->dispatch('notify', type: 'error', content: 'No tasks selected.');
+            return;
+        }
+        
+        $this->bulkAssignUsers = [];
+        $this->showBulkAssignModal = true;
+    }
+
+    public function closeBulkAssignModal(): void
+    {
+        $this->showBulkAssignModal = false;
+        $this->bulkAssignUsers = [];
+    }
+
+    public function applyBulkAssign(): void
+    {
+        abort_if(!$this->canManage, 403);
+        
+        $this->validate([
+            'bulkAssignUsers' => 'nullable|array',
+            'bulkAssignUsers.*' => 'exists:users,id',
+        ]);
+
+        if (empty($this->selectedTasks)) {
+            $this->dispatch('notify', type: 'error', content: 'No tasks selected.');
+            $this->showBulkAssignModal = false;
+            return;
+        }
+
+        foreach ($this->selectedTasks as $taskId) {
+            $task = Task::find($taskId);
+            if ($task) {
+                // syncWithoutDetaching attaches users without removing existing
+                $task->users()->syncWithoutDetaching($this->bulkAssignUsers);
+            }
+        }
+
+        session()->flash('message', 'Bulk assignment applied successfully to ' . count($this->selectedTasks) . ' tasks.');
+        
+        $this->selectedTasks = [];
+        $this->bulkAssignUsers = [];
+        $this->showBulkAssignModal = false;
+
+        $this->project->refresh();
     }
 
     // ──────────────────────────────────────────────

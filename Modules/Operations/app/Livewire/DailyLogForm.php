@@ -94,6 +94,7 @@ class DailyLogForm extends Component
         $this->myTasks = Task::with('project')
             ->whereHas('users', fn($q) => $q->where('users.id', $user->id))
             ->whereDoesntHave('children')
+            ->where('total_progress', '<', 100)
             ->take(50)
             ->get();
     }
@@ -139,8 +140,17 @@ class DailyLogForm extends Component
             $this->activeLogId = $log->id;
             $this->activeClockInTime = $now->format('H:i');
             
-            $taskName = Task::find($this->taskId)->name ?? 'Unknown Task';
+            $task = Task::find($this->taskId);
+            $taskName = $task->name ?? 'Unknown Task';
             $this->activeTaskName = $taskName;
+
+            // Trigger Actual Start Date
+            if ($task && is_null($task->actual_start_date)) {
+                $task->actual_start_date = $now->toDateString();
+                $task->status = 'In Progress';
+                // Use saveQuietly to prevent triggering recalculation observers unnecessarily
+                $task->saveQuietly();
+            }
 
             session()->flash('message', 'Clocked In Successfully at ' . $now->format('H:i') . ' WIB.');
             
@@ -285,6 +295,13 @@ class DailyLogForm extends Component
             'is_backdate'        => true,
             'approval_status'    => 'pending',
         ]);
+
+        // Trigger Actual Start Date
+        if ($task && is_null($task->actual_start_date)) {
+            $task->actual_start_date = $this->backdateDate;
+            $task->status = 'In Progress';
+            $task->saveQuietly();
+        }
 
         session()->flash('message', 'Backdate Request Submitted for Manager Approval.');
         $this->reset(['taskId', 'clockIn', 'clockOut', 'progressIncrement', 'notes']);
