@@ -13,7 +13,7 @@ class ApprovalManager extends Component
     // Modals state for revision
     public bool $isRejectModalOpen = false;
     public ?int $rejectLogId = null;
-    public int $revisedProgress = 0;
+    public float $revisedProgress = 0;
     public string $rejectReason = '';
 
     public function mount()
@@ -57,37 +57,22 @@ class ApprovalManager extends Component
             'approval_status' => 'approved',
         ]);
 
-        // Apply the progress increment to the linked task upon approval
+        // Delegate progress + status recalculation to the Task model
+        // which sums all approved logs — single source of truth.
         if ($log->progress_increment > 0) {
             $task = $log->task;
             if ($task) {
-                $newProgress = $task->total_progress + $log->progress_increment;
+                // Set actual_end_date if this log might push to 100%
+                $projected = (float) $task->dailyLogs()
+                    ->where('approval_status', 'approved')
+                    ->sum('progress_increment');
 
-                if ($newProgress >= 100) {
-                    $task->total_progress = 100;
-                    
-                    // Trigger Actual End & Status Calculation
+                if ($projected >= 100 && is_null($task->actual_end_date)) {
                     $task->actual_end_date = $log->log_date;
-                    
-                    $plannedEnd = \Carbon\Carbon::parse($task->end_date)->startOfDay();
-                    $actualEnd = \Carbon\Carbon::parse($task->actual_end_date)->startOfDay();
+                    $task->saveQuietly();
+                }
 
-                    if ($actualEnd->lt($plannedEnd)) {
-                        $task->status = 'Completed (Ahead)';
-                    } elseif ($actualEnd->eq($plannedEnd)) {
-                        $task->status = 'Completed (On Time)';
-                    } else {
-                        $task->status = 'Completed (Late)';
-                    }
-                } else {
-                    $task->total_progress = $newProgress;
-                }
-                
-                $task->save();
-                
-                if (method_exists($task, 'recalculateProgress')) {
-                    $task->recalculateProgress();
-                }
+                $task->recalculateProgress();
             }
         }
 
@@ -123,57 +108,39 @@ class ApprovalManager extends Component
 
         $log = DailyLog::findOrFail($this->rejectLogId);
         $task = $log->task;
-        $revisedProgressInt = (int) $this->revisedProgress;
+        $revisedProgressValue = (float) $this->revisedProgress;
 
         if ($task) {
-            if ($revisedProgressInt < $task->total_progress) {
+            if ($revisedProgressValue < $task->total_progress) {
                 // Give an error/flash message: Revised progress cannot be lower than previous
                 session()->flash('error', "Revised progress cannot be lower than the previously approved progress ({$task->total_progress}%).");
                 return;
             }
 
             // Calculate the incremental progress that supervisor allows
-            $allowedIncrement = $revisedProgressInt - $task->total_progress;
+            $allowedIncrement = $revisedProgressValue - $task->total_progress;
 
             // Instead of saving it as rejected, save it as approved
             $log->progress_increment = $allowedIncrement;
             $log->approval_status = 'approved';
             $log->rejection_reason = $this->rejectReason; // keep track of the reason
-            $log->notes = "[REVISED by Leader] Claimed 100%, Approved as " . $revisedProgressInt . "% | Reason: " . $this->rejectReason . "\n---\n" . ($log->notes ?? '');
+            $log->notes = "[REVISED by Leader] Claimed 100%, Approved as " . $revisedProgressValue . "% | Reason: " . $this->rejectReason . "\n---\n" . ($log->notes ?? '');
             $log->save();
 
-            // Update & Recalculate Task
-            $task->total_progress = $revisedProgressInt;
-            if ($revisedProgressInt >= 100) {
-                // Trigger Actual End & Status Calculation
+            // Set actual_end_date if revision pushes to 100%
+            if ($revisedProgressValue >= 100 && is_null($task->actual_end_date)) {
                 $task->actual_end_date = $log->log_date;
-                
-                $plannedEnd = \Carbon\Carbon::parse($task->end_date)->startOfDay();
-                $actualEnd = \Carbon\Carbon::parse($task->actual_end_date)->startOfDay();
-
-                if ($actualEnd->lt($plannedEnd)) {
-                    $task->status = 'Completed (Ahead)';
-                } elseif ($actualEnd->eq($plannedEnd)) {
-                    $task->status = 'Completed (On Time)';
-                } else {
-                    $task->status = 'Completed (Late)';
-                }
-            } elseif ($revisedProgressInt < 100 && str_starts_with($task->status, 'Completed')) {
-                $task->status = 'In Progress'; 
-                $task->actual_end_date = null;
+                $task->saveQuietly();
             }
-            $task->save();
 
-            // Call recalculate if it exists
-            if (method_exists($task, 'recalculateProgress')) {
-                $task->recalculateProgress();
-            }
+            // Delegate progress + status recalculation to the Task model
+            $task->recalculateProgress();
         } else {
             // Fallback if there is no task attached to the log
-            $log->progress_increment = $revisedProgressInt;
+            $log->progress_increment = $revisedProgressValue;
             $log->approval_status = 'approved';
             $log->rejection_reason = $this->rejectReason;
-            $log->notes = "[REVISED by Leader] Claimed 100%, Approved as " . $revisedProgressInt . "% | Reason: " . $this->rejectReason . "\n---\n" . ($log->notes ?? '');
+            $log->notes = "[REVISED by Leader] Claimed 100%, Approved as " . $revisedProgressValue . "% | Reason: " . $this->rejectReason . "\n---\n" . ($log->notes ?? '');
             $log->save();
         }
 

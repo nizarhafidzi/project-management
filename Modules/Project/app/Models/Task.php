@@ -15,6 +15,9 @@ class Task extends Model
         'parent_id',
         'wbs_code',
         'name',
+        'description',
+        'categories',
+        'discipline',
         'acc_file_name',
         'acc_file_urn',
         'acc_file_version',
@@ -206,16 +209,82 @@ class Task extends Model
 
     /**
      * Recalculate and persist progress for this task and all ancestors.
+     *
+     * Leaf tasks: sum approved daily_log progress_increment values.
+     * Parent tasks: weighted rollup from children.
+     * Status is strictly synchronised — 'Completed' only when >= 100.
      */
     public function recalculateProgress(): void
     {
         if ($this->children()->exists()) {
+            // ── Parent task: weighted rollup ──
             $this->total_progress = $this->calculateProgressRollup();
+        } else {
+            // ── Leaf task: authoritative sum from approved daily logs ──
+            $sum = (float) $this->dailyLogs()
+                ->where('approval_status', 'approved')
+                ->sum('progress_increment');
+
+            $this->total_progress = min($sum, 100);
+        }
+
+        // ── Status synchronisation ──
+        if ($this->total_progress >= 100) {
+            $this->total_progress = 100;
+
+            // Only set Completed status if not already a Completed variant
+            if (!str_starts_with($this->status ?? '', 'Completed')) {
+                $plannedEnd = $this->end_date ? \Carbon\Carbon::parse($this->end_date)->startOfDay() : null;
+                $actualEnd  = $this->actual_end_date
+                    ? \Carbon\Carbon::parse($this->actual_end_date)->startOfDay()
+                    : \Carbon\Carbon::today('Asia/Jakarta');
+
+                if ($plannedEnd) {
+                    if ($actualEnd->lt($plannedEnd)) {
+                        $this->status = 'Completed (Ahead)';
+                    } elseif ($actualEnd->eq($plannedEnd)) {
+                        $this->status = 'Completed (On Time)';
+                    } else {
+                        $this->status = 'Completed (Late)';
+                    }
+                } else {
+                    $this->status = 'Completed (On Time)';
+                }
+            }
+        } else {
+            // If still below 100, ensure the status is NOT 'Completed'
+            if ($this->total_progress > 0) {
+                $this->status = 'In Progress';
+                $this->actual_end_date = null;
+            }
+        }
+
+        $this->saveQuietly();
+
+        // ── Propagate to parent ──
+        if ($this->parent_id) {
+            $this->parent->recalculateProgress();
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    // Weight Rollup
+    // ──────────────────────────────────────────────
+
+    /**
+     * Recalculate and persist weight for this task from its children's sum.
+     * Recursively propagates upward to the root so the entire ancestor chain stays in sync.
+     * Uses saveQuietly() to suppress model events and prevent infinite recursion.
+     */
+    public function recalculateWeight(): void
+    {
+        if ($this->children()->exists()) {
+            $this->weight = $this->children()->sum('weight');
             $this->saveQuietly();
         }
 
         if ($this->parent_id) {
-            $this->parent->recalculateProgress();
+            $this->parent->recalculateWeight();
         }
     }
 }

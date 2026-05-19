@@ -42,6 +42,7 @@
                         <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">Date</th>
                         <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">User</th>
                         <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">Project & Task</th>
+                        <th class="tw-px-6 tw-py-3 tw-text-center tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">Link ACC File</th>
                         <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">Labels</th>
                         <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">Progress</th>
                         <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">Notes</th>
@@ -71,6 +72,22 @@
                             <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap">
                                 <p class="tw-text-sm tw-text-gray-900">{{ $log->task->name ?? 'Unknown' }}</p>
                                 <p class="tw-text-xs tw-text-gray-400">{{ $log->task->project->name ?? '' }}</p>
+                            </td>
+
+                            {{-- ACC File Link --}}
+                            <td class="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-center">
+                                @if(isset($log->task) && $log->task->acc_file_urn)
+                                    <a href="{{ route('project.task.workspace', ['project' => $log->task->project_id, 'task' => $log->task->id]) }}"
+                                       target="_blank"
+                                       title="{{ $log->task->acc_file_name }}"
+                                       class="tw-inline-flex tw-items-center tw-justify-center tw-p-1.5 tw-bg-blue-50 tw-text-[#174D9D] hover:tw-bg-blue-100 hover:tw-text-blue-800 tw-rounded-md tw-transition-colors">
+                                        <svg class="tw-w-5 tw-h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                        </svg>
+                                    </a>
+                                @else
+                                    <span class="tw-text-gray-400 tw-text-sm">—</span>
+                                @endif
                             </td>
 
                             {{-- Labels --}}
@@ -132,7 +149,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="tw-px-6 tw-py-10 tw-text-center">
+                            <td colspan="8" class="tw-px-6 tw-py-10 tw-text-center">
                                 <svg class="tw-mx-auto tw-h-10 tw-w-10 tw-text-gray-300 tw-mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 <p class="tw-text-sm tw-text-gray-500">No pending requests. All clear!</p>
                             </td>
@@ -156,6 +173,7 @@
                             <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">Date</th>
                             <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">User</th>
                             <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">Task</th>
+                            <th class="tw-px-6 tw-py-3 tw-text-center tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">Link ACC File</th>
                             <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">Progress</th>
                             <th class="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-uppercase tw-text-gray-500 tw-font-medium tw-tracking-wider">Status</th>
                         </tr>
@@ -166,6 +184,20 @@
                                 <td class="tw-px-6 tw-py-3 tw-text-sm tw-text-gray-900 tw-font-medium">{{ \Carbon\Carbon::parse($decision->log_date)->format('D, d M Y') }}</td>
                                 <td class="tw-px-6 tw-py-3 tw-text-sm tw-text-gray-600">{{ $decision->user->name }}</td>
                                 <td class="tw-px-6 tw-py-3 tw-text-sm tw-text-gray-600">{{ $decision->task->name ?? '—' }}</td>
+                                <td class="tw-px-6 tw-py-3 tw-text-center">
+                                    @if(isset($decision->task) && $decision->task->acc_file_urn)
+                                        <a href="{{ route('project.task.workspace', ['project' => $decision->task->project_id, 'task' => $decision->task->id]) }}"
+                                           target="_blank"
+                                           title="{{ $decision->task->acc_file_name }}"
+                                           class="tw-inline-flex tw-items-center tw-justify-center tw-p-1.5 tw-bg-blue-50 tw-text-[#174D9D] hover:tw-bg-blue-100 hover:tw-text-blue-800 tw-rounded-md tw-transition-colors">
+                                            <svg class="tw-w-5 tw-h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                            </svg>
+                                        </a>
+                                    @else
+                                        <span class="tw-text-gray-400 tw-text-sm">—</span>
+                                    @endif
+                                </td>
                                 <td class="tw-px-6 tw-py-3 tw-text-sm tw-font-semibold tw-text-[#174D9D]">+{{ $decision->progress_increment }}%</td>
                                 <td class="tw-px-6 tw-py-3 tw-text-sm">
                                     @if($decision->approval_status === 'approved')

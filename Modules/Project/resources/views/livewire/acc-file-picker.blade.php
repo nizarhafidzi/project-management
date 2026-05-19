@@ -5,7 +5,7 @@
 
     {{-- Modal Panel --}}
     <div class="tw-fixed tw-inset-0 tw-z-50 tw-flex tw-items-center tw-justify-center tw-p-4">
-        <div class="tw-bg-white tw-rounded-xl tw-shadow-2xl tw-w-full tw-max-w-2xl tw-max-h-[80vh] tw-flex tw-flex-col tw-overflow-hidden tw-border tw-border-gray-200">
+        <div class="tw-bg-white tw-rounded-xl tw-shadow-2xl tw-w-full tw-max-w-4xl tw-max-h-[80vh] tw-flex tw-flex-col tw-overflow-hidden tw-border tw-border-gray-200">
 
             {{-- Header --}}
             <div class="tw-px-6 tw-py-4 tw-border-b tw-border-gray-200 tw-flex tw-items-center tw-justify-between">
@@ -52,7 +52,7 @@
             </div>
 
             {{-- File/Folder List --}}
-            <div class="tw-flex-1 tw-overflow-y-auto tw-relative">
+            <div class="tw-flex-1 tw-overflow-y-auto tw-overflow-x-auto tw-relative">
 
                 {{-- Loading Overlay --}}
                 <div wire:loading.flex class="tw-absolute tw-inset-0 tw-z-10 tw-items-center tw-justify-center tw-bg-white/80 tw-backdrop-blur-[2px]">
@@ -77,7 +77,7 @@
                     </div>
                 @else
                     @forelse($items as $item)
-                        <div class="tw-flex tw-items-center tw-justify-between hover:tw-bg-blue-50 tw-cursor-pointer tw-border-b tw-border-gray-100 tw-py-3 tw-px-4 tw-transition-colors tw-group">
+                        <div class="tw-flex tw-items-center tw-justify-between hover:tw-bg-blue-50 tw-cursor-pointer tw-border-b tw-border-gray-100 tw-py-3 tw-px-4 tw-transition-colors tw-group tw-min-w-max">
                             <div class="tw-flex tw-items-center tw-gap-3 tw-min-w-0 tw-flex-1">
                                 @if(str_contains($item['type'], 'Folder'))
                                     {{-- Folder Icon (Yellow) --}}
@@ -86,7 +86,7 @@
                                             <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
                                         </svg>
                                     </div>
-                                    <button wire:click="openFolder('{{ $item['id'] }}', '{{ $item['name'] }}')" class="tw-text-sm tw-font-medium tw-text-gray-700 group-hover:tw-text-blue-700 tw-text-left tw-truncate tw-transition-colors">
+                                    <button wire:click="openFolder('{{ $item['id'] }}', '{{ $item['name'] }}')" class="tw-text-sm tw-font-medium tw-text-gray-700 group-hover:tw-text-blue-700 tw-text-left tw-whitespace-nowrap tw-transition-colors" title="{{ $item['name'] }}">
                                         {{ $item['name'] }}
                                     </button>
                                     {{-- Folder Chevron --}}
@@ -98,7 +98,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                                         </svg>
                                     </div>
-                                    <span class="tw-text-sm tw-text-gray-700 tw-truncate">{{ $item['name'] }}</span>
+                                    <span class="tw-text-sm tw-text-gray-700 tw-whitespace-nowrap" title="{{ $item['name'] }}">{{ $item['name'] }}</span>
                                 @endif
                             </div>
 

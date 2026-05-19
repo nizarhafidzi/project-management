@@ -24,6 +24,10 @@ class WbsManager extends Component
     public array $bulkAssignUsers = [];
     public bool $showBulkAssignModal = false;
 
+    // Import state
+    public ?int $importParentId = null;
+    public bool $showImportSubTaskModal = false;
+
     // Form fields
     public ?int $formParentId = null;
     public string $formName = '';
@@ -61,15 +65,20 @@ class WbsManager extends Component
 
     protected function rules(): array
     {
+        // Parent tasks have their weight auto-calculated from children — skip required validation.
+        $isParentTask = $this->isEditing && $this->editingTaskId
+            ? (bool) Task::find($this->editingTaskId)?->children()->exists()
+            : false;
+
         return [
-            'formName' => 'required|string|max:255',
-            'formWeight' => 'required|numeric|min:0|max:100',
-            'formStartDate' => 'required|date',
-            'formEndDate' => 'required|date|after_or_equal:formStartDate',
-            'formAccFileName' => 'nullable|string|max:255',
-            'formAccFileUrn' => 'nullable|string',
-            'formAccFileVersion' => 'nullable|integer',
-            'formAssignedUsers' => 'nullable|array',
+            'formName'            => 'required|string|max:255',
+            'formWeight'          => $isParentTask ? 'nullable|numeric' : 'required|numeric|min:0|max:100',
+            'formStartDate'       => 'required|date',
+            'formEndDate'         => 'required|date|after_or_equal:formStartDate',
+            'formAccFileName'     => 'nullable|string|max:255',
+            'formAccFileUrn'      => 'nullable|string',
+            'formAccFileVersion'  => 'nullable|integer',
+            'formAssignedUsers'   => 'nullable|array',
             'formAssignedUsers.*' => 'exists:users,id',
         ];
     }
@@ -317,6 +326,30 @@ class WbsManager extends Component
         $this->project->refresh();
     }
 
+    public function deleteSelectedTasks(): void
+    {
+        abort_if(!$this->canManage, 403);
+
+        if (empty($this->selectedTasks)) {
+            return;
+        }
+
+        // Iterate individually so model 'deleting' events fire (cascading children/relations)
+        $tasks = Task::whereIn('id', $this->selectedTasks)->get();
+        $count = $tasks->count();
+
+        foreach ($tasks as $task) {
+            $task->delete();
+        }
+
+        // Reset state
+        $this->selectedTasks = [];
+
+        session()->flash('message', "{$count} selected task(s) have been deleted successfully.");
+
+        $this->project->refresh();
+    }
+
     // ──────────────────────────────────────────────
     // Save Task
     // ──────────────────────────────────────────────
@@ -337,16 +370,29 @@ class WbsManager extends Component
         try {
             if ($this->isEditing) {
                 $task = Task::findOrFail($this->editingTaskId);
-                $task->update([
-                    'name' => $this->formName,
-                    'weight' => (float) $this->formWeight,
-                    'start_date' => $this->formStartDate,
-                    'end_date' => $this->formEndDate,
-                    'acc_file_name' => $this->formAccFileName ?: null,
-                    'acc_file_urn' => $this->formAccFileUrn ?: null,
+                $isParent = $task->children()->exists();
+
+                $updateData = [
+                    'name'             => $this->formName,
+                    'start_date'       => $this->formStartDate,
+                    'end_date'         => $this->formEndDate,
+                    'acc_file_name'    => $this->formAccFileName ?: null,
+                    'acc_file_urn'     => $this->formAccFileUrn ?: null,
                     'acc_file_version' => $this->formAccFileVersion,
-                ]);
+                ];
+
+                // Only overwrite weight for leaf tasks; parent weight is auto-summed from children.
+                if (!$isParent) {
+                    $updateData['weight'] = (float) $this->formWeight;
+                }
+
+                $task->update($updateData);
                 $task->users()->sync($this->formAssignedUsers);
+
+                // Bubble weight recalculation upward through the ancestor chain.
+                if ($task->parent_id) {
+                    $task->parent->recalculateWeight();
+                }
 
                 session()->flash('message', 'Task updated successfully.');
             } else {
@@ -355,23 +401,28 @@ class WbsManager extends Component
                     ->max('sort_order') ?? 0;
 
                 $task = Task::create([
-                    'project_id' => $this->project->id,
-                    'parent_id' => $this->formParentId,
-                    'wbs_code' => $this->formWbsCode,
-                    'name' => $this->formName,
-                    'weight' => (float) $this->formWeight,
-                    'start_date' => $this->formStartDate,
-                    'end_date' => $this->formEndDate,
-                    'acc_file_name' => $this->formAccFileName ?: null,
-                    'acc_file_urn' => $this->formAccFileUrn ?: null,
+                    'project_id'       => $this->project->id,
+                    'parent_id'        => $this->formParentId,
+                    'wbs_code'         => $this->formWbsCode,
+                    'name'             => $this->formName,
+                    'weight'           => (float) $this->formWeight,
+                    'start_date'       => $this->formStartDate,
+                    'end_date'         => $this->formEndDate,
+                    'acc_file_name'    => $this->formAccFileName ?: null,
+                    'acc_file_urn'     => $this->formAccFileUrn ?: null,
                     'acc_file_version' => $this->formAccFileVersion,
-                    'sort_order' => $sortOrder + 1,
+                    'sort_order'       => $sortOrder + 1,
                 ]);
                 $task->users()->sync($this->formAssignedUsers);
 
-                // Auto-expand parent to show new child
+                // Auto-expand parent to show new child.
                 if ($this->formParentId && !in_array($this->formParentId, $this->expandedNodes)) {
                     $this->expandedNodes[] = $this->formParentId;
+                }
+
+                // Bubble weight recalculation upward through the ancestor chain.
+                if ($task->parent_id) {
+                    $task->parent->recalculateWeight();
                 }
 
                 session()->flash('message', 'Task created successfully.');
@@ -524,14 +575,7 @@ class WbsManager extends Component
 
     public $inputTemplate;
 
-    public function downloadTemplate()
-    {
-        $service = new \Modules\Project\Services\TaskImportService(
-            $this->project->id, 
-            app(\Modules\Reporting\Services\ProjectPlanService::class)
-        );
-        return $service->downloadTemplate();
-    }
+
 
     public function exportWbs()
     {
@@ -559,13 +603,115 @@ class WbsManager extends Component
 
             $stats = $service->import($this->inputTemplate);
             
+            $parts = [];
+            if ($stats['sheets_processed'] > 0) {
+                $parts[] = "{$stats['sheets_processed']} sheet(s) processed";
+            }
+            if ($stats['created'] > 0) {
+                $parts[] = "{$stats['created']} task(s) created";
+            }
+            if ($stats['updated'] > 0) {
+                $parts[] = "{$stats['updated']} task(s) updated";
+            }
+            if ($stats['skipped'] > 0) {
+                $parts[] = "{$stats['skipped']} row(s) skipped";
+            }
+
+            $summary = !empty($parts) ? implode(', ', $parts) : 'No data found to import.';
+
             $this->dispatch('notify', 
-                type: 'success', 
-                content: "Import Successful: {$stats['created']} created, {$stats['updated']} updated, {$stats['missing_emails']} missing emails."
+                type: $stats['created'] > 0 || $stats['updated'] > 0 ? 'success' : 'info', 
+                content: "Import Complete: {$summary}"
             );
 
             $this->inputTemplate = null; // Reset file input
             $this->project->refresh();
+        } catch (\Exception $e) {
+            $this->dispatch('notify', 
+                type: 'error', 
+                content: 'Import Failed: ' . $e->getMessage()
+            );
+        }
+    }
+
+    public function downloadTemplate()
+    {
+        abort_if(!$this->canManage, 403);
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \Modules\Project\Exports\WbsTemplateExport(),
+            'TIDP_MIDP_Template.xlsx'
+        );
+    }
+
+    public function openImportSubTaskModal($parentId)
+    {
+        $this->importParentId = $parentId;
+        $this->showImportSubTaskModal = true;
+    }
+
+    public function closeImportSubTaskModal()
+    {
+        $this->showImportSubTaskModal = false;
+        $this->importParentId = null;
+        $this->inputTemplate = null;
+    }
+
+    public function importSubTaskExcel()
+    {
+        abort_if(!$this->canManage, 403);
+        
+        $this->validate([
+            'inputTemplate' => 'required|file|mimes:xlsx,xls|max:10240', // 10MB max
+        ]);
+
+        try {
+            $service = new \Modules\Project\Services\TaskImportService(
+                $this->project->id, 
+                app(\Modules\Reporting\Services\ProjectPlanService::class)
+            );
+
+            $stats = $service->import($this->inputTemplate, $this->importParentId);
+            
+            $parts = [];
+            if ($stats['sheets_processed'] > 0) {
+                $parts[] = "{$stats['sheets_processed']} sheet(s) processed";
+            }
+            if ($stats['created'] > 0) {
+                $parts[] = "{$stats['created']} task(s) created";
+            }
+            if ($stats['updated'] > 0) {
+                $parts[] = "{$stats['updated']} task(s) updated";
+            }
+            if ($stats['skipped'] > 0) {
+                $parts[] = "{$stats['skipped']} row(s) skipped";
+            }
+
+            $summary = !empty($parts) ? implode(', ', $parts) : 'No data found to import.';
+
+            // Auto-recalculate parent
+            if ($this->importParentId) {
+                $parentTask = \Modules\Project\Models\Task::find($this->importParentId);
+                if ($parentTask) {
+                    $parentTask->recalculateWeight();
+                    if (method_exists($parentTask, 'recalculateProgress')) {
+                        $parentTask->recalculateProgress();
+                    }
+                }
+            }
+
+            $this->dispatch('notify', 
+                type: $stats['created'] > 0 || $stats['updated'] > 0 ? 'success' : 'info', 
+                content: "Sub-Task Import Complete: {$summary}"
+            );
+
+            $this->closeImportSubTaskModal();
+            $this->project->refresh();
+            
+            // Expand parent node so user can see imported children
+            if ($this->importParentId && !in_array($this->importParentId, $this->expandedNodes)) {
+                $this->expandedNodes[] = $this->importParentId;
+            }
         } catch (\Exception $e) {
             $this->dispatch('notify', 
                 type: 'error', 

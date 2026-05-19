@@ -51,7 +51,7 @@
                 <span class="tw-flex-shrink-0 tw-px-2.5 tw-py-1 tw-rounded-lg tw-text-xs tw-font-bold
                     {{ $task->total_progress >= 100 ? 'tw-bg-green-50 tw-text-green-700 tw-ring-1 tw-ring-green-200' : 'tw-text-white' }}"
                     @if($task->total_progress < 100) style="background-color: #174D9D;" @endif>
-                    {{ $task->total_progress }}%
+                    {{ number_format($task->total_progress, 1) }}%
                 </span>
             </div>
 
@@ -80,7 +80,7 @@
             <p class="tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-tracking-wider tw-mb-3">Daily Progress</p>
             <div class="tw-flex tw-items-center tw-gap-2">
                 <div class="tw-flex-1 tw-text-center">
-                    <p class="tw-text-2xl tw-font-bold tw-text-gray-900">{{ $task->total_progress }}<span class="tw-text-sm tw-text-gray-400">%</span></p>
+                    <p class="tw-text-2xl tw-font-bold tw-text-gray-900">{{ number_format($task->total_progress, 1) }}<span class="tw-text-sm tw-text-gray-400">%</span></p>
                     <p class="tw-text-[10px] tw-text-gray-400 tw-mt-0.5">Current</p>
                 </div>
                 <div class="tw-w-px tw-h-10 tw-bg-gray-200"></div>

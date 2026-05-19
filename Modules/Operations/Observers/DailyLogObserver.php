@@ -65,18 +65,16 @@ class DailyLogObserver
 
     /**
      * Calculate and update the task's total progress.
+     * Delegates to the Task model's recalculateProgress() which is the
+     * single source of truth for progress sum + status synchronisation.
      */
     private function updateTaskProgress(DailyLog $dailyLog): void
     {
         $task = $dailyLog->task;
 
         if ($task) {
-            // 1. Update Task Total Progress
-            $total = DailyLog::where('task_id', $task->id)
-                ->where('approval_status', 'approved')
-                ->sum('progress_increment');
-
-            $task->update(['total_progress' => min($total, 100)]);
+            // 1. Recalculate progress from approved logs + sync status
+            $task->recalculateProgress();
 
             // 2. Update Project Plan S-Curve Actuals
             $project = $task->project;

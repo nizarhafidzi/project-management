@@ -227,13 +227,9 @@ class DailyLogForm extends Component
                 'approval_status'    => $approvalStatus,
             ]);
 
-            // Update total progress in the Tasks table ONLY if approved
+            // Recalculate total progress from the authoritative sum of approved logs
             if ($log->task && $approvalStatus === 'approved') {
-                $log->task->total_progress = min(100, $log->task->total_progress + $progressToSave);
-                $log->task->save();
-                if (method_exists($log->task, 'recalculateProgress')) {
-                    $log->task->recalculateProgress();
-                }
+                $log->task->recalculateProgress();
             }
 
             session()->flash('message', 'Clocked Out Successfully. Progress saved.');

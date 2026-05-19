@@ -60,6 +60,18 @@
                     </svg>
                     Bulk Assign ({{ count($selectedTasks) }})
                 </button>
+
+                {{-- Bulk Delete --}}
+                <button type="button"
+                        wire:click="deleteSelectedTasks"
+                        wire:confirm="Are you sure you want to delete the selected tasks? This action cannot be undone and may delete child tasks!"
+                        wire:key="bulk-delete-btn-{{ count($selectedTasks) }}"
+                        class="tw-inline-flex tw-items-center tw-px-3 tw-py-2 tw-rounded-lg tw-text-sm tw-font-medium tw-text-white tw-bg-red-600 hover:tw-bg-red-700 tw-shadow-sm tw-transition-colors tw-border tw-border-transparent">
+                    <svg class="tw-w-4 tw-h-4 tw-mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Bulk Delete ({{ count($selectedTasks) }})
+                </button>
             @endif
         @endif
 
@@ -97,19 +109,20 @@
                 <div x-show="open" x-cloak x-transition
                      class="tw-absolute tw-right-0 tw-mt-2 tw-w-52 tw-bg-white tw-rounded-lg tw-shadow-lg tw-ring-1 tw-ring-black tw-ring-opacity-5 tw-z-50">
                     <div class="tw-py-1">
-                        <button wire:click="downloadTemplate"
-                                class="tw-flex tw-items-center tw-w-full tw-text-left tw-px-4 tw-py-2 tw-text-sm tw-text-gray-700 hover:tw-bg-gray-50 tw-transition-colors">
-                            <svg class="tw-w-4 tw-h-4 tw-mr-2 tw-text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                            </svg>
-                            Download Template
-                        </button>
                         <button @click="$dispatch('open-import-modal'); open = false"
                                 class="tw-flex tw-items-center tw-w-full tw-text-left tw-px-4 tw-py-2 tw-text-sm tw-text-gray-700 hover:tw-bg-gray-50 tw-transition-colors">
                             <svg class="tw-w-4 tw-h-4 tw-mr-2 tw-text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                             </svg>
-                            Import Excel
+                            Import Excel (TIDP/MIDP)
+                        </button>
+                        <div class="tw-border-t tw-border-gray-100 tw-my-1"></div>
+                        <button wire:click="downloadTemplate" @click="open = false"
+                                class="tw-flex tw-items-center tw-w-full tw-text-left tw-px-4 tw-py-2 tw-text-sm tw-text-blue-700 hover:tw-bg-blue-50 tw-transition-colors tw-font-medium">
+                            <svg class="tw-w-4 tw-h-4 tw-mr-2 tw-text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Download TIDP/MIDP Template
                         </button>
                         <div class="tw-border-t tw-border-gray-100 tw-my-1"></div>
                         <button wire:click="exportWbs" @click="open = false"
@@ -216,35 +229,82 @@
         </div>
 
         @if ($rootTasks->count() > 0)
+            {{-- ═══════════ HORIZONTAL SCROLL WRAPPER ═══════════ --}}
+            <div class="tw-w-full tw-overflow-x-auto tw-pb-4">
+            <div class="tw-min-w-[1400px] tw-w-full">
+
             {{-- ═══════════ TREE GRID HEADER ═══════════ --}}
-            <div class="tw-overflow-x-auto">
-            <div class="tw-hidden md:tw-grid tw-gap-2 tw-bg-gray-50 tw-border-b tw-border-gray-200 tw-px-4 tw-py-3 tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-tracking-wider" style="grid-template-columns: 3.5fr 0.8fr 0.6fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.6fr 0.8fr 1fr; min-width: 1100px;">
-                <div class="tw-flex tw-items-center">
+            <div class="tw-hidden md:tw-grid tw-bg-gray-50 tw-border-b tw-border-gray-200 tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-tracking-wider"
+                 style="grid-template-columns: minmax(300px, auto) 90px 70px 100px 100px 100px 100px 100px 70px 90px 110px;">
+
+                {{-- Col 0: Task Name --}}
+                <div class="tw-flex tw-items-center tw-px-5 tw-py-3">
                     @if ($canManage)
-                        <div class="tw-w-4 tw-mr-3"></div>
+                        <div class="tw-w-4 tw-mr-3 tw-flex-shrink-0"></div>
                     @endif
-                    Task Name
+                    <span class="tw-truncate">Task Name</span>
                 </div>
-                <div class="tw-text-center">WBS Code</div>
-                <div class="tw-text-center">Weight</div>
-                <div class="tw-text-center">Plan Start</div>
-                <div class="tw-text-center">Plan End</div>
-                <div class="tw-text-center">Actual Start</div>
-                <div class="tw-text-center">Actual End</div>
-                <div class="tw-text-center">Status</div>
-                <div class="tw-text-center">Progress</div>
-                <div class="tw-text-center">Assigned</div>
-                <div class="tw-text-right">Actions</div>
+
+                {{-- Col 1: WBS Code --}}
+                <div class="tw-flex tw-items-center tw-justify-center tw-px-2 tw-py-3">
+                    <span class="tw-truncate">WBS Code</span>
+                </div>
+
+                {{-- Col 2: Weight --}}
+                <div class="tw-flex tw-items-center tw-justify-center tw-px-2 tw-py-3">
+                    <span class="tw-truncate">Weight</span>
+                </div>
+
+                {{-- Col 3: Plan Start --}}
+                <div class="tw-flex tw-items-center tw-justify-center tw-px-2 tw-py-3">
+                    <span class="tw-truncate">Plan Start</span>
+                </div>
+
+                {{-- Col 4: Plan End --}}
+                <div class="tw-flex tw-items-center tw-justify-center tw-px-2 tw-py-3">
+                    <span class="tw-truncate">Plan End</span>
+                </div>
+
+                {{-- Col 5: Actual Start --}}
+                <div class="tw-flex tw-items-center tw-justify-center tw-px-2 tw-py-3">
+                    <span class="tw-truncate">Actual Start</span>
+                </div>
+
+                {{-- Col 6: Actual End --}}
+                <div class="tw-flex tw-items-center tw-justify-center tw-px-2 tw-py-3">
+                    <span class="tw-truncate">Actual End</span>
+                </div>
+
+                {{-- Col 7: Status --}}
+                <div class="tw-flex tw-items-center tw-justify-center tw-px-2 tw-py-3">
+                    <span class="tw-truncate">Status</span>
+                </div>
+
+                {{-- Col 8: Progress --}}
+                <div class="tw-flex tw-items-center tw-justify-center tw-px-2 tw-py-3">
+                    <span class="tw-truncate">Progress</span>
+                </div>
+
+                {{-- Col 9: Assigned --}}
+                <div class="tw-flex tw-items-center tw-justify-center tw-px-2 tw-py-3">
+                    <span class="tw-truncate">Assigned</span>
+                </div>
+
+                {{-- Col 10: Actions --}}
+                <div class="tw-flex tw-items-center tw-justify-end tw-px-4 tw-py-3">
+                    <span class="tw-truncate">Actions</span>
+                </div>
             </div>
 
             {{-- ═══════════ TASK ROWS ═══════════ --}}
-            <div class="tw-overflow-x-auto">
             <div class="tw-divide-y tw-divide-gray-100">
                 @foreach ($rootTasks as $task)
                     @include('project::livewire.partials.wbs-task-row', ['task' => $task, 'depth' => 0])
                 @endforeach
             </div>
-            </div>
+
+            </div>{{-- end tw-min-w-[1400px] --}}
+            </div>{{-- end tw-overflow-x-auto --}}
         @else
             {{-- ═══════════ EMPTY STATE ═══════════ --}}
             <div class="tw-text-center tw-py-16 tw-px-6">
@@ -337,8 +397,29 @@
                             {{-- Weight --}}
                             <div>
                                 <x-input-label for="formWeight" :value="__('Weight (%)')" />
-                                <x-text-input wire:model="formWeight" id="formWeight" type="number" step="0.01" min="0" max="100"
-                                              class="tw-mt-1 tw-block tw-w-full" placeholder="e.g. 30" />
+                                @php
+                                    $isEditingParent = $isEditing && $editingTaskId
+                                        ? \Modules\Project\Models\Task::find($editingTaskId)?->children()->exists()
+                                        : false;
+                                @endphp
+                                @if ($isEditingParent)
+                                    {{-- Parent task: weight is auto-calculated from children --}}
+                                    <div class="tw-mt-1 tw-flex tw-items-center tw-gap-2">
+                                        <x-text-input id="formWeight" type="number" step="0.01"
+                                                      :value="$formWeight"
+                                                      class="tw-block tw-w-full tw-bg-gray-100 tw-text-gray-500 tw-cursor-not-allowed tw-border-gray-200"
+                                                      disabled />
+                                        <span class="tw-inline-flex tw-items-center tw-gap-1 tw-text-xs tw-text-amber-600 tw-whitespace-nowrap tw-font-medium">
+                                            <svg class="tw-w-3.5 tw-h-3.5 tw-flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                                            </svg>
+                                            Auto-sum from sub-tasks
+                                        </span>
+                                    </div>
+                                @else
+                                    <x-text-input wire:model="formWeight" id="formWeight" type="number" step="0.01" min="0" max="100"
+                                                  class="tw-mt-1 tw-block tw-w-full" placeholder="e.g. 30" />
+                                @endif
                                 <x-input-error :messages="$errors->get('formWeight')" class="tw-mt-1" />
                             </div>
 
@@ -386,9 +467,9 @@
                             <div x-data="{ openPicker: @entangle('showFilePicker') }">
                                 <x-input-label for="formAccFileName" :value="__('Linked ACC File')" />
                                 <div class="tw-mt-1 tw-flex tw-rounded-lg tw-shadow-sm">
-                                    <div class="tw-relative tw-flex-grow focus-within:tw-z-10">
+                                    <div class="tw-relative tw-flex-grow focus-within:tw-z-10 tw-min-w-0">
                                         <x-text-input wire:model="formAccFileName" id="formAccFileName" type="text" readonly
-                                                      class="tw-block tw-w-full tw-rounded-none tw-rounded-l-lg tw-bg-gray-50 tw-text-gray-500"
+                                                      class="tw-block tw-w-full tw-rounded-none tw-rounded-l-lg tw-bg-gray-50 tw-text-gray-500 tw-truncate"
                                                       placeholder="No file selected" />
                                     </div>
                                     <button type="button" @click="openPicker = !openPicker"
@@ -474,8 +555,8 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 class="tw-text-lg tw-font-semibold tw-text-gray-900">Import WBS Implementation</h3>
-                            <p class="tw-text-sm tw-text-gray-500">Upload your Excel file to bulk create or update tasks.</p>
+                            <h3 class="tw-text-lg tw-font-semibold tw-text-gray-900">Import WBS (TIDP/MIDP)</h3>
+                            <p class="tw-text-sm tw-text-gray-500">Upload your TIDP/MIDP Excel file. Only sheets named "TIDP" or "MIDP" will be processed.</p>
                         </div>
                     </div>
                 </div>
@@ -527,6 +608,85 @@
             </div>
         </div>
     </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════
+         IMPORT SUB TASK MODAL
+    ═══════════════════════════════════════════════════════════════ --}}
+    @if ($showImportSubTaskModal)
+        <div class="tw-fixed tw-inset-0 tw-z-50 tw-overflow-y-auto">
+            <div class="tw-flex tw-items-center tw-justify-center tw-min-h-screen tw-px-4 tw-py-6">
+                {{-- Backdrop --}}
+                <div class="tw-fixed tw-inset-0 tw-bg-gray-900/60 tw-backdrop-blur-sm tw-transition-opacity" wire:click="closeImportSubTaskModal"></div>
+
+                {{-- Modal Panel --}}
+                <div class="tw-relative tw-bg-white tw-rounded-xl tw-shadow-2xl tw-w-full tw-max-w-lg tw-transform tw-transition-all">
+
+                    {{-- Header --}}
+                    <div class="tw-px-6 tw-py-4 tw-border-b tw-border-gray-200">
+                        <div class="tw-flex tw-items-center tw-space-x-3">
+                            <div class="tw-flex tw-items-center tw-justify-center tw-h-10 tw-w-10 tw-rounded-full tw-bg-green-100">
+                                <svg class="tw-h-5 tw-w-5 tw-text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="tw-text-lg tw-font-semibold tw-text-gray-900">Import Sub Tasks</h3>
+                                @php
+                                    $parentNameForImport = \Modules\Project\Models\Task::find($importParentId)?->name ?? 'Unknown Parent';
+                                @endphp
+                                <p class="tw-text-sm tw-text-gray-500">Import Sub Tasks for: <span class="tw-font-medium tw-text-gray-800">{{ $parentNameForImport }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Body --}}
+                    <div class="tw-px-6 tw-py-5">
+                        <div class="tw-border-2 tw-border-dashed tw-border-gray-300 tw-rounded-lg tw-p-8 tw-flex tw-flex-col tw-items-center tw-justify-center hover:tw-border-[#174D9D] tw-transition-colors tw-bg-gray-50/50">
+                            <svg class="tw-w-10 tw-h-10 tw-text-gray-400 tw-mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <input type="file" wire:model="inputTemplate" class="tw-block tw-w-full tw-text-sm tw-text-gray-500
+                                file:tw-mr-4 file:tw-py-2 file:tw-px-4
+                                file:tw-rounded-lg file:tw-border-0
+                                file:tw-text-sm file:tw-font-medium
+                                file:tw-bg-blue-50 file:tw-text-[#174D9D]
+                                hover:file:tw-bg-blue-100 tw-transition-colors
+                            "/>
+                            <div wire:loading wire:target="inputTemplate" class="tw-mt-3 tw-text-sm tw-text-gray-500 tw-italic tw-flex tw-items-center">
+                                <svg class="tw-animate-spin tw-w-4 tw-h-4 tw-mr-2" fill="none" viewBox="0 0 24 24">
+                                    <circle class="tw-opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="tw-opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Uploading...
+                            </div>
+                        </div>
+                        <x-input-error :messages="$errors->get('inputTemplate')" class="tw-mt-2" />
+                    </div>
+
+                    {{-- Footer --}}
+                    <div class="tw-px-6 tw-py-4 tw-border-t tw-border-gray-200 tw-bg-gray-50/50 tw-flex tw-justify-end tw-gap-3 tw-rounded-b-xl">
+                        <button wire:click="closeImportSubTaskModal" type="button"
+                                class="tw-px-4 tw-py-2 tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-white hover:tw-bg-gray-50 tw-transition-colors tw-shadow-sm">
+                            Cancel
+                        </button>
+                        <button wire:click="importSubTaskExcel" wire:loading.attr="disabled" type="button"
+                                class="tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-rounded-lg tw-text-sm tw-font-medium tw-text-white tw-shadow-sm tw-transition-colors disabled:tw-opacity-50 disabled:tw-cursor-not-allowed tw-border tw-border-transparent"
+                                style="background-color: #174D9D;"
+                                onmouseover="this.style.backgroundColor='#123f82'" onmouseout="this.style.backgroundColor='#174D9D'">
+                            <span wire:loading.remove wire:target="importSubTaskExcel">Import Sub Tasks</span>
+                            <span wire:loading wire:target="importSubTaskExcel" class="tw-flex tw-items-center">
+                                <svg class="tw-animate-spin tw-w-4 tw-h-4 tw-mr-2" fill="none" viewBox="0 0 24 24">
+                                    <circle class="tw-opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="tw-opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Processing...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- ═══════════════════════════════════════════════════════════════
          BULK ASSIGN MODAL
@@ -592,3 +752,4 @@
         </div>
     @endif
 </div>
+

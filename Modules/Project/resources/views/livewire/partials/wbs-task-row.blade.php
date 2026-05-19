@@ -11,7 +11,7 @@
 <div wire:key="task-{{ $task->id }}">
 
     {{-- Row Container --}}
-    <div class="tw-grid tw-gap-2 tw-bg-white hover:tw-bg-blue-50/50 tw-transition-colors tw-border-b tw-border-gray-100 tw-px-4 tw-py-3 tw-group tw-items-center" style="grid-template-columns: 3.5fr 0.8fr 0.6fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.6fr 0.8fr 1fr; min-width: 1100px;">
+    <div class="tw-grid tw-bg-white hover:tw-bg-blue-50/50 tw-transition-colors tw-border-b tw-border-gray-100 tw-px-4 tw-py-3 tw-group tw-items-center" style="grid-template-columns: minmax(300px, auto) 90px 70px 100px 100px 100px 100px 100px 70px 90px 110px;">
 
         {{-- ═══════ TASK NAME ═══════ --}}
         <div class="tw-min-w-0">
@@ -47,7 +47,7 @@
                 @endif
 
                 <div class="tw-min-w-0 tw-flex-1">
-                    <span class="tw-font-medium tw-text-gray-800 tw-text-sm tw-truncate tw-block" title="{{ $task->name }}">
+                    <span class="tw-font-medium tw-text-gray-800 tw-text-sm tw-block" title="{{ $task->name }}">
                         {{ $task->name }}
                     </span>
                     @if ($task->acc_file_name)
@@ -148,7 +148,7 @@
         {{-- ═══════ PROGRESS ═══════ --}}
         <div class="tw-text-center">
             <div class="tw-flex tw-flex-col tw-items-center tw-gap-0.5">
-                <span class="tw-text-xs tw-font-medium tw-text-gray-600">{{ number_format($task->total_progress, 0) }}%</span>
+                <span class="tw-text-xs tw-font-medium tw-text-gray-600">{{ number_format($task->total_progress, 1) }}%</span>
                 <div class="tw-w-full tw-bg-gray-200 tw-rounded-full tw-h-1.5 tw-mx-auto" style="max-width: 3rem;">
                     <div class="tw-bg-emerald-500 tw-h-1.5 tw-rounded-full tw-transition-all" style="width: {{ min($task->total_progress, 100) }}%"></div>
                 </div>
@@ -182,6 +182,13 @@
                             title="Add Sub-Task">
                         <svg class="tw-w-4 tw-h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                    </button>
+                    <button wire:click="openImportSubTaskModal({{ $task->id }})"
+                            class="tw-inline-flex tw-items-center tw-p-1.5 tw-rounded-md tw-text-gray-400 hover:tw-text-green-600 hover:tw-bg-green-50 tw-transition-colors"
+                            title="Import Sub Tasks">
+                        <svg class="tw-w-4 tw-h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                         </svg>
                     </button>
                     <button wire:click="openEditModal({{ $task->id }})"
